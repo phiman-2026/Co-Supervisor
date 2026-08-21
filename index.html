@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบแบบประเมินนิเทศครู - โรงเรียนพิมานพิทยาสรรค์</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Fonts: Prompt -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+
+  <!-- Chart.js Library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SweetAlert2 (ใช้ใน submitEvaluationForm / generateSchoolReport แต่ไฟล์เดิมไม่ได้โหลดไว้) -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    :root {
+      --primary-maroon: #611b22;
+      --primary-maroon-dark: #471117;
+      --sidebar-bg: #40181d;
+      --card-header-gray: #514b4c;
+      --bg-light: #f4f6f9;
+      --text-dark: #222222;
+    }
+
+    body {
+      font-family: 'Prompt', sans-serif !important;
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+    }
+
+    /* Sidebar Area */
+    .sidebar {
+      background-color: var(--sidebar-bg);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    .sidebar-brand {
+      padding: 15px 10px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      margin-bottom: 15px;
+    }
+
+    .sidebar-brand i {
+      font-size: 2.8rem;
+      margin-bottom: 8px;
+    }
+
+    .sidebar .nav-link {
+      font-family: 'Prompt', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #ffffff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .sidebar .nav-link:hover, .sidebar .nav-link.active {
+      background-color: var(--primary-maroon);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    /* Header Banner */
+    .header-banner {
+      background: linear-gradient(135deg, var(--primary-maroon) 0%, var(--primary-maroon-dark) 100%);
+      color: #ffffff;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Cards & Gradients */
+    .card-section {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      background-color: #ffffff;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .card-header-gradient {
+      background: linear-gradient(90deg, #611b22 0%, #514b4c 100%);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 15px;
+      padding: 12px 20px;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-header-custom {
+      background-color: var(--card-header-gray);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 16px;
+      padding: 12px 20px;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title-red {
+      color: var(--primary-maroon);
+      font-weight: 600;
+      font-size: 15px;
+      margin-top: 18px;
+      margin-bottom: 10px;
+    }
+
+    /* Form Controls */
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #444;
+      margin-bottom: 4px;
+    }
+
+    .form-control, .form-select {
+      font-family: 'Prompt', sans-serif;
+      border-radius: 8px;
+      font-size: 14px;
+      border: 1px solid #dcdcdc;
+      padding: 8px 12px;
+    }
+
+    /* Searchable name combobox (พิมพ์ค้นชื่อ) — ใช้กับ "ชื่อผู้สอน" และ "ชื่อครูผู้ร่วมนิเทศ" */
+    .combo-wrap { position: relative; }
+    .combo-wrap .form-control { padding-right: 34px; }
+    .combo-wrap .combo-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      pointer-events: none;
+      font-size: 13px;
+    }
+    .combo-panel {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      margin-top: 4px;
+      background: #fff;
+      border: 1px solid #dcdcdc;
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      max-height: 230px;
+      overflow-y: auto;
+      z-index: 1050;
+    }
+    .combo-item {
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .combo-item.active, .combo-item:hover {
+      background-color: rgba(97, 27, 34, 0.08);
+    }
+    .combo-empty {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #999;
+    }
+
+    /* Highlight Badges */
+    .badge-box {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      min-width: 50px;
+      text-align: center;
+    }
+    .badge-box-maroon { background-color: #611b22; color: #fff; }
+
+    /* Quality Level Item Box */
+    .level-box-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background-color: #f8f9fa;
+      border: 1px solid #eee;
+    }
+    .count-badge {
+      display: inline-block;
+      min-width: 45px;
+      text-align: center;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Rating Box */
+    .rating-box {
+      display: inline-flex;
+      border: 1.5px solid #dc3545;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .rating-box input[type="radio"] { display: none; }
+    .rating-box label {
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #dc3545;
+      background-color: #fff;
+      border-right: 1px solid #dc3545;
+      cursor: pointer;
+      margin: 0;
+    }
+    .rating-box label:last-child { border-right: none; }
+    .rating-box input[type="radio"]:checked + label {
+      background-color: #dc3545;
+      color: #ffffff;
+    }
+
+    /* Buttons & Pad */
+    .btn-submit-red {
+      background-color: var(--primary-maroon);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 16px;
+      padding: 10px 32px;
+      border-radius: 8px;
+      border: none;
+      box-shadow: 0 4px 10px rgba(97, 27, 34, 0.3);
+    }
+    .signature-pad {
+      border: 1.5px dashed var(--primary-maroon);
+      border-radius: 8px;
+      background-color: #fafafa;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .img-preview-box {
+      width: 100%;
+      height: 180px;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background-color: #f8f9fa;
+      margin-top: 8px;
+    }
+    .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+
+    .school-logo {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+      border-radius: 8px;
+      background-color: #ffffff;
+      padding: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 sidebar p-3">
+      <div class="sidebar-brand">
+        <!-- ใส่ลิงก์รูปตราโรงเรียนจริงที่ค่า SCHOOL_LOGO_URL ในสคริปต์ด้านล่าง (อัปโหลดรูปขึ้น Drive
+             ตั้งค่าแชร์เป็น "ทุกคนที่มีลิงก์ - ดูได้" แล้วคัดลอกลิงก์มาใส่) ถ้าไม่ตั้งค่า จะแสดงไอคอนแทน -->
+        <img id="schoolLogoImg" src="" alt="ตราโรงเรียนพิมานพิทยาสรรค์" class="school-logo d-none"
+             onerror="this.classList.add('d-none'); document.getElementById('schoolLogoFallback').classList.remove('d-none');">
+        <i id="schoolLogoFallback" class="fa-solid fa-school text-white"></i>
+        <h6 class="fw-bold m-0 mt-1">งานนิเทศการศึกษา</h6>
+        <small class="text-white-50" style="font-size: 11px;">โรงเรียนพิมานพิทยาสรรค์</small>
+      </div>
+
+      <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+        <button class="nav-link active" onclick="switchTab('tab1', this)">
+          <i class="fa-solid fa-clipboard-check"></i> 1. ประเมินนิเทศครู (Co-Supervisor)
+        </button>
+        <button class="nav-link" onclick="switchTab('tab2', this)">
+          <i class="fa-solid fa-calendar-days"></i> 2. ปฏิทินการเปิดชั้นเรียน
+        </button>
+        <button class="nav-link" onclick="switchTab('tab3', this)">
+          <i class="fa-solid fa-user-check"></i> 3. ผลประเมินรายบุคคล
+        </button>
+        <button class="nav-link" onclick="switchTab('tab4', this)">
+          <i class="fa-solid fa-chart-pie"></i> 4. แดชบอร์ดภาพรวม
+        </button>
+        <button class="nav-link" onclick="switchTab('tab5', this)">
+          <i class="fa-solid fa-file-invoice"></i> 5. รายงานผลงานนิเทศการศึกษา
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="col-md-9 col-lg-10 p-4">
+      <div class="header-banner">
+        <h4 class="fw-bold mb-2"><i class="fa-solid fa-chalkboard-user me-2"></i>ระบบแบบประเมินนิเทศครูเป็นรายบุคคลโดยใช้กระบวนการขับเคลื่อนการจัดกิจกรรมการเรียนรู้ของผู้ร่วมนิเทศ (Co-Supervisor)</h4>
+        <p class="m-0 fs-6 text-white-50">ภาคเรียนที่ 1 ปีการศึกษา 2569 | งานนิเทศการศึกษา โรงเรียนพิมานพิทยาสรรค์ จังหวัดสตูล</p>
+      </div>
+
+      <!-- TAB 1: แบบประเมิน -->
+      <div id="tab1" class="tab-content-item">
+        <form id="evalForm" onsubmit="event.preventDefault(); submitEvaluationForm();">
+          <div class="card card-section">
+            <div class="card-header card-header-custom"><i class="fa-solid fa-user-gear"></i> ตอนที่ 1 ข้อมูลครูผู้รับการนิเทศ</div>
+            <div class="card-body p-4">
+
+              <div class="alert alert-secondary d-flex align-items-start mb-3" style="font-size: 13px;">
+                <i class="fa-solid fa-circle-info me-2 mt-1"></i>
+                <div><strong>แนะนำ:</strong> เลือก "รายการนิเทศจากปฏิทิน" ก่อน เพื่อดึงข้อมูลตอนที่ 1 ให้ตรงกันทุกท่านที่ร่วมนิเทศ (ป้องกันข้อมูลไม่ตรงกันระหว่างผู้ร่วมนิเทศคนที่ 1-5 และปัญหาข้อมูลทับซ้อนตอนแปลง PDF)</div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-bold">เลือกรายการนิเทศจากปฏิทิน</label>
+                <select id="scheduleSelect" class="form-select" onchange="applySchedule(this.value)">
+                  <option value="">-- ไม่พบในปฏิทิน / กรอกข้อมูลด้านล่างเอง --</option>
+                </select>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">วันที่ประเมิน</label>
+                  <div class="d-flex gap-1">
+                    <select id="evalDay" class="form-select"></select>
+                    <select id="evalMonth" class="form-select"></select>
+                    <select id="evalYear" class="form-select"></select>
+                  </div>
+                </div>
+                <div class="col-md-4" id="fieldWrap_teacherName"></div>
+                <div class="col-md-4" id="fieldWrap_position"></div>
+
+                <div class="col-md-4">
+                  <label class="form-label">กลุ่มสาระการเรียนรู้ / หน่วยงาน</label>
+                  <select name="department" id="selDepartment" class="form-select" required>
+                    <option value="">-- เลือกกลุ่มสาระ --</option>
+                    <option value="ภาษาไทย">ภาษาไทย</option>
+                    <option value="คณิตศาสตร์">คณิตศาสตร์</option>
+                    <option value="วิทยาศาสตร์">วิทยาศาสตร์</option>
+                    <option value="คอมพิวเตอร์">คอมพิวเตอร์</option>
+                    <option value="ภาษาต่างประเทศ">ภาษาต่างประเทศ</option>
+                    <option value="สังคมศึกษา ศาสนาและวัฒนธรรม">สังคมศึกษา ศาสนาและวัฒนธรรม</option>
+                    <option value="การงานอาชีพ">การงานอาชีพ</option>
+                    <option value="สุขศึกษาและพลศึกษา">สุขศึกษาและพลศึกษา</option>
+                    <option value="ศิลปะ">ศิลปะ</option>
+                    <option value="งานแนะแนวและบรรณารักษ์">งานแนะแนวและบรรณารักษ์</option>
+                  </select>
+                </div>
+
+                <div class="col-md-4" id="fieldWrap_subject"></div>
+                <div class="col-md-4" id="fieldWrap_code"></div>
+                <div class="col-md-4" id="fieldWrap_grade"></div>
+                <div class="col-md-4" id="fieldWrap_room"></div>
+                <div class="col-md-4" id="fieldWrap_period"></div>
+                <div class="col-md-4">
+                  <label class="form-label">เวลา</label>
+                  <input type="text" id="teachingTimeDisplay" class="form-control" readonly placeholder="เลือกจากปฏิทินด้านบน">
+                </div>
+                <div class="col-md-6"><label class="form-label">หน่วยการเรียนรู้ที่</label><input type="text" name="unit" class="form-control"></div>
+                <div class="col-md-6"><label class="form-label">แผนการจัดการเรียนรู้ เรื่อง</label><input type="text" name="lesson" class="form-control"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-section">
+            <div class="card-header card-header-custom"><i class="fa-solid fa-list-check"></i> ตอนที่ 2 รายการประเมินนิเทศครูเป็นรายบุคคล (25 ข้อ)</div>
+            <div class="card-body p-4">
+              <div id="questionsContainer"></div>
+            </div>
+          </div>
+
+          <div class="card card-section">
+            <div class="card-header card-header-custom"><i class="fa-solid fa-comment-dots"></i> ตอนที่ 3 ข้อเสนอแนะเพิ่มเติม</div>
+            <div class="card-body p-4">
+              <textarea name="suggestions" class="form-control" rows="3" placeholder="พิมพ์ข้อเสนอแนะ..."></textarea>
+            </div>
+          </div>
+
+          <div class="card card-section">
+            <div class="card-header card-header-custom">
+              <i class="fa-solid fa-image"></i> ตอนที่ 4 ภาพการจัดกิจกรรมการเรียนรู้ / การนิเทศ (4 ภาพ)
+            </div>
+            <div class="card-body p-4">
+              <div class="alert alert-warning border-warning d-flex align-items-center mb-4" role="alert">
+                <i class="fa-solid fa-circle-exclamation fs-4 me-3 text-warning"></i>
+                <div style="font-size: 14px;">
+                  <strong>หมายเหตุ:</strong> ระบบยึดให้<strong>เฉพาะผู้ร่วมนิเทศ "คนที่ 1"</strong> เท่านั้นที่แนบรูปภาพได้ (กำหนดที่ "ลำดับคนที่" ในตอนที่ 5 ด้านล่าง) เพื่อไม่ให้เกิดความทับซ้อนของรูปภาพในระบบ
+                </div>
+              </div>
+
+              <div id="photoNonPrimaryNotice" class="alert alert-secondary d-none" style="font-size: 14px;">
+                <i class="fa-solid fa-circle-info me-2"></i>
+                ท่านเลือก "ลำดับคนที่" ไม่ใช่คนที่ 1 ในตอนที่ 5 ระบบจึงซ่อนช่องแนบภาพไว้ (ให้ผู้ร่วมนิเทศคนที่ 1 เป็นผู้แนบภาพแทน)
+              </div>
+
+              <div id="photoUploadBody" class="row g-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">รูปภาพที่ 1</label>
+                  <div class="input-group">
+                    <input type="file" id="fileInput1" class="form-control" accept="image/*" capture="environment" onchange="previewImage(this, 'imgPreview1', 'imgPlaceholder1')">
+                    <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput1').click();">
+                      <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
+                    </button>
+                  </div>
+                  <div class="img-preview-box"><span id="imgPlaceholder1" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview1" src="#" class="d-none"></div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">รูปภาพที่ 2</label>
+                  <div class="input-group">
+                    <input type="file" id="fileInput2" class="form-control" accept="image/*" capture="environment" onchange="previewImage(this, 'imgPreview2', 'imgPlaceholder2')">
+                    <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput2').click();">
+                      <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
+                    </button>
+                  </div>
+                  <div class="img-preview-box"><span id="imgPlaceholder2" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview2" src="#" class="d-none"></div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">รูปภาพที่ 3</label>
+                  <div class="input-group">
+                    <input type="file" id="fileInput3" class="form-control" accept="image/*" capture="environment" onchange="previewImage(this, 'imgPreview3', 'imgPlaceholder3')">
+                    <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput3').click();">
+                      <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
+                    </button>
+                  </div>
+                  <div class="img-preview-box"><span id="imgPlaceholder3" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview3" src="#" class="d-none"></div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">รูปภาพที่ 4</label>
+                  <div class="input-group">
+                    <input type="file" id="fileInput4" class="form-control" accept="image/*" capture="environment" onchange="previewImage(this, 'imgPreview4', 'imgPlaceholder4')">
+                    <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput4').click();">
+                      <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
+                    </button>
+                  </div>
+                  <div class="img-preview-box"><span id="imgPlaceholder4" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview4" src="#" class="d-none"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-section">
+            <div class="card-header card-header-custom"><i class="fa-solid fa-pen-nib"></i> ตอนที่ 5 ข้อมูลครูผู้ร่วมนิเทศ</div>
+            <div class="card-body p-4">
+              <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                  <label class="form-label">ชื่อครูผู้ร่วมนิเทศ</label>
+                  <div class="combo-wrap">
+                    <input type="text" name="evaluatorName" id="evaluatorNameInput" class="form-control" placeholder="พิมพ์เพื่อค้นหา หรือระบุชื่อ" autocomplete="off" required>
+                    <i class="fa-solid fa-magnifying-glass combo-icon"></i>
+                    <div id="evaluatorNameList" class="combo-panel d-none"></div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">ตำแหน่ง</label>
+                  <select name="evaluatorPosition" id="evaluatorPositionSelect" class="form-select" required>
+                    <option value="">-- เลือกตำแหน่ง --</option>
+                  </select>
+                </div>
+                <div class="col-md-4"><label class="form-label">ลำดับคนที่</label><select name="evaluatorOrder" class="form-select"><option>คนที่ 1</option><option>คนที่ 2</option><option>คนที่ 3</option><option>คนที่ 4</option><option>คนที่ 5</option></select></div>
+              </div>
+              <div class="text-center">
+                <label class="form-label fw-bold d-block">วาดลายเซ็น โดยนิ้วบนหน้าจอสัมผัส หรือ ใช้เมาส์</label>
+                <canvas id="sigCanvas" width="400" height="130" class="signature-pad"></canvas><br>
+                <button type="button" class="btn btn-sm btn-secondary mt-1" onclick="clearSig()">ล้างลายเซ็น</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center my-4">
+            <button type="button" class="btn btn-submit-red" onclick="submitEvaluationForm()"><i class="fa-solid fa-paper-plane me-2"></i>บันทึกข้อมูลการประเมิน</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TAB 2: ปฏิทิน -->
+      <div id="tab2" class="tab-content-item d-none">
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="card card-section">
+              <div class="card-header card-header-custom"><i class="fa-solid fa-calendar-plus"></i> ลงทะเบียนปฏิทิน</div>
+              <div class="card-body p-3">
+                <form id="calForm" class="row g-3" onsubmit="event.preventDefault(); submitCalendarForm();">
+                  <div class="col-12">
+                    <label class="form-label">ชื่อผู้สอน</label>
+                    <div class="combo-wrap">
+                      <input type="text" name="teacherName" id="calTeacherNameInput" class="form-control" placeholder="พิมพ์เพื่อค้นหา หรือระบุชื่อผู้สอน" autocomplete="off" required>
+                      <i class="fa-solid fa-magnifying-glass combo-icon"></i>
+                      <div id="calTeacherNameList" class="combo-panel d-none"></div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">ตำแหน่ง</label>
+                    <select name="position" id="calPositionSelect" class="form-select" required>
+                      <option value="">-- เลือกตำแหน่ง --</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">กลุ่มสาระการเรียนรู้</label>
+                    <select name="department" class="form-select" required>
+                      <option value="">-- เลือกกลุ่มสาระ --</option>
+                      <option value="ภาษาไทย">ภาษาไทย</option>
+                      <option value="คณิตศาสตร์">คณิตศาสตร์</option>
+                      <option value="วิทยาศาสตร์">วิทยาศาสตร์</option>
+                      <option value="คอมพิวเตอร์">คอมพิวเตอร์</option>
+                      <option value="ภาษาต่างประเทศ">ภาษาต่างประเทศ</option>
+                      <option value="สังคมศึกษา ศาสนาและวัฒนธรรม">สังคมศึกษา ศาสนาและวัฒนธรรม</option>
+                      <option value="การงานอาชีพ">การงานอาชีพ</option>
+                      <option value="สุขศึกษาและพลศึกษา">สุขศึกษาและพลศึกษา</option>
+                      <option value="ศิลปะ">ศิลปะ</option>
+                      <option value="งานแนะแนวและบรรณารักษ์">งานแนะแนวและบรรณารักษ์</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">รายวิชา</label>
+                    <input type="text" name="subject" class="form-control" placeholder="ระบุชื่อรายวิชา" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">รหัสวิชา</label>
+                    <input type="text" name="code" class="form-control" placeholder="เช่น ว21103">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">ระดับชั้น</label>
+                    <select name="grade" class="form-select" required>
+                      <option value="">-- ชั้น --</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                      <option value="6">6</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">ห้อง</label>
+                    <select name="room" class="form-select" required>
+                      <option value="">-- ห้อง --</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                      <option value="6">6</option>
+                      <option value="7">7</option>
+                      <option value="8">8</option>
+                      <option value="9">9</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">หน่วยการเรียนรู้ที่</label>
+                    <input type="text" name="unit" class="form-control" inputmode="numeric" placeholder="เช่น 1" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">แผนการจัดการเรียนรู้ เรื่อง</label>
+                    <input type="text" name="lesson" class="form-control" placeholder="ระบุชื่อเรื่อง">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">คาบที่</label>
+                    <input type="text" name="period" class="form-control" inputmode="numeric" placeholder="เช่น 3 หรือ 3-4" required oninput="this.value = this.value.replace(/[^0-9-]/g, '')">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">เวลาเริ่มต้น</label>
+                    <input type="time" name="eventTimeStart" class="form-control" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">เวลาสิ้นสุด</label>
+                    <input type="time" name="eventTimeEnd" class="form-control" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">วันที่</label>
+                    <input type="date" name="eventDate" class="form-control" required>
+                  </div>
+
+                  <div class="col-12"><hr class="my-2"></div>
+                  <div class="col-12"><label class="form-label fw-bold text-danger m-0">ข้อมูลทีม PLC</label></div>
+                  <div class="col-12">
+                    <label class="form-label">ชื่อทีม PLC</label>
+                    <input type="text" name="plcTeamName" class="form-control" placeholder="ระบุชื่อทีม PLC">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">ชื่อ-สกุล Model Teacher</label>
+                    <input type="text" name="modelTeacher" class="form-control">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">ชื่อ-สกุล Buddy Teacher (คนที่ 1)</label>
+                    <input type="text" name="buddyTeacher1" class="form-control">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">ชื่อ-สกุล Buddy Teacher (คนที่ 2)</label>
+                    <input type="text" name="buddyTeacher2" class="form-control">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">ชื่อ-สกุล Mentor</label>
+                    <input type="text" name="mentor" class="form-control">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">ชื่อ-สกุล Expert</label>
+                    <input type="text" name="expert" class="form-control">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">ชื่อ-สกุล Administrator</label>
+                    <input type="text" name="administrator" class="form-control">
+                  </div>
+
+                  <div class="col-12 text-center mt-3">
+                    <button type="submit" class="btn btn-submit-red w-100"><i class="fa-solid fa-calendar-check me-2"></i>บันทึก</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <div class="card card-section p-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-danger m-0">
+                  <i class="fa-solid fa-calendar-days me-1"></i> ปฏิทินการเปิดชั้นเรียน
+                  <span id="calendarEventCount" class="text-muted fw-normal" style="font-size: 12px;"></span>
+                </h6>
+                <button class="btn btn-sm btn-outline-danger" type="button" onclick="if (calendarInstance) calendarInstance.refetchEvents();">
+                  <i class="fa-solid fa-rotate me-1"></i> รีเฟรชปฏิทิน
+                </button>
+              </div>
+              <div id="calendar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: ผลประเมินรายบุคคล -->
+      <div id="tab3" class="tab-content-item d-none">
+        <div class="card card-section">
+          <div class="card-header card-header-custom"><i class="fa-solid fa-magnifying-glass"></i> ค้นหาผลประเมิน</div>
+          <div class="card-body p-4">
+            <div class="input-group mb-3">
+              <input type="text" id="teacherSearchInput" class="form-control" placeholder="พิมพ์ชื่อครู..." onkeydown="if(event.key==='Enter'){event.preventDefault(); searchTeacher();}">
+              <button class="btn btn-submit-red" type="button" onclick="searchTeacher()">ค้นหา</button>
+            </div>
+            <div id="teacherSearchResults"></div>
+            <div id="visitGroupsArea" class="mt-4"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: แดชบอร์ดภาพรวม -->
+      <div id="tab4" class="tab-content-item d-none">
+        <div class="mb-4">
+          <h5 class="fw-bold text-dark mb-1">
+            <i class="fa-solid fa-chart-line text-danger me-2"></i>การประเมินนิเทศครูเป็นรายบุคคลโดยใช้กระบวนการขับเคลื่อนการจัดกิจกรรมการเรียนรู้ของครูผู้ร่วมนิเทศ (Co-Supervisor)
+          </h5>
+        </div>
+
+        <div class="row g-3 text-center mb-4">
+          <div class="col-md-4">
+            <div class="p-3 bg-white rounded-3 shadow-sm border-start border-danger border-5 h-100">
+              <h6 class="text-muted fw-normal mb-1">จำนวนครูที่ได้รับการนิเทศเปิดชั้นเรียน</h6>
+              <h2 id="kpiTeachers" class="fw-bold text-danger m-0">0 <span class="fs-6 text-muted">คน</span></h2>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-white rounded-3 shadow-sm border-start border-secondary border-5 h-100">
+              <h6 class="text-muted fw-normal mb-1">ค่าเฉลี่ยของโรงเรียน</h6>
+              <h2 id="kpiAvg" class="fw-bold text-secondary m-0">0.00 <span class="fs-6 text-muted">/ 125</span></h2>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-white rounded-3 shadow-sm border-start border-dark border-5 h-100">
+              <h6 class="text-muted fw-normal mb-1">คิดเป็นร้อยละโรงเรียน</h6>
+              <h2 id="kpiPercent" class="fw-bold text-dark m-0">0.00%</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-lg-6">
+            <div class="card card-section h-100">
+              <div class="card-header card-header-gradient">
+                <i class="fa-solid fa-list-check me-2"></i> การประเมินแต่ละด้านของโรงเรียน (ค่าเฉลี่ย และร้อยละ)
+              </div>
+              <div class="card-body p-3">
+                <div class="d-flex flex-column gap-3">
+                  <div>
+                    <div class="d-flex justify-content-between mb-1">
+                      <span class="fw-semibold fs-7">ด้านการออกแบบการเรียนรู้</span>
+                      <span><span class="text-muted me-2" id="avgAspect1" style="font-size:12px;">0.00 / 25</span><span class="badge-box badge-box-maroon" id="scoreAspect1">0.00%</span></span>
+                    </div>
+                    <div class="progress" style="height: 10px;"><div id="barAspect1" class="progress-bar bg-danger" style="width: 0%;"></div></div>
+                  </div>
+                  <div>
+                    <div class="d-flex justify-content-between mb-1">
+                      <span class="fw-semibold fs-7">ด้านการจัดการเรียนรู้</span>
+                      <span><span class="text-muted me-2" id="avgAspect2" style="font-size:12px;">0.00 / 25</span><span class="badge-box badge-box-maroon" id="scoreAspect2">0.00%</span></span>
+                    </div>
+                    <div class="progress" style="height: 10px;"><div id="barAspect2" class="progress-bar bg-danger" style="width: 0%;"></div></div>
+                  </div>
+                  <div>
+                    <div class="d-flex justify-content-between mb-1">
+                      <span class="fw-semibold fs-7">ด้านการจัดบรรยากาศการเรียนรู้</span>
+                      <span><span class="text-muted me-2" id="avgAspect3" style="font-size:12px;">0.00 / 25</span><span class="badge-box badge-box-maroon" id="scoreAspect3">0.00%</span></span>
+                    </div>
+                    <div class="progress" style="height: 10px;"><div id="barAspect3" class="progress-bar bg-danger" style="width: 0%;"></div></div>
+                  </div>
+                  <div>
+                    <div class="d-flex justify-content-between mb-1">
+                      <span class="fw-semibold fs-7">ด้านการใช้สื่อ เทคโนโลยี และแหล่งเรียนรู้</span>
+                      <span><span class="text-muted me-2" id="avgAspect4" style="font-size:12px;">0.00 / 25</span><span class="badge-box badge-box-maroon" id="scoreAspect4">0.00%</span></span>
+                    </div>
+                    <div class="progress" style="height: 10px;"><div id="barAspect4" class="progress-bar bg-danger" style="width: 0%;"></div></div>
+                  </div>
+                  <div>
+                    <div class="d-flex justify-content-between mb-1">
+                      <span class="fw-semibold fs-7">ด้านการวัดและประเมินผลการเรียนรู้</span>
+                      <span><span class="text-muted me-2" id="avgAspect5" style="font-size:12px;">0.00 / 25</span><span class="badge-box badge-box-maroon" id="scoreAspect5">0.00%</span></span>
+                    </div>
+                    <div class="progress" style="height: 10px;"><div id="barAspect5" class="progress-bar bg-danger" style="width: 0%;"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="card card-section h-100">
+              <div class="card-header card-header-gradient">
+                <i class="fa-solid fa-chart-pie me-2"></i> สัดส่วนระดับคุณภาพประเมินนิเทศครูเป็นรายบุคคลโดยใช้กระบวนการขับเคลื่อนการจัดกิจกรรมการเรียนรู้ของครูผู้ร่วมนิเทศ (Co-Supervisor)
+              </div>
+              <div class="card-body p-3">
+                <div class="row align-items-center">
+                  <div class="col-md-6 text-center mb-3 mb-md-0">
+                    <div style="position: relative; width: 100%; max-width: 210px; margin: 0 auto; height: 210px;">
+                      <canvas id="qualityPieChart"></canvas>
+                    </div>
+                  </div>
+                  <div class="col-md-6 d-flex flex-column gap-2" style="font-size: 13px;">
+                    <div class="level-box-item">
+                      <span><i class="fa-solid fa-circle text-success me-1"></i> <strong>ยอดเยี่ยม</strong> (80% ขึ้นไป)</span>
+                      <span class="count-badge bg-success" id="countLevel5">0 คน</span>
+                    </div>
+                    <div class="level-box-item">
+                      <span><i class="fa-solid fa-circle text-primary me-1"></i> <strong>ดีมาก</strong> (70% - 79%)</span>
+                      <span class="count-badge bg-primary" id="countLevel4">0 คน</span>
+                    </div>
+                    <div class="level-box-item">
+                      <span><i class="fa-solid fa-circle text-info me-1"></i> <strong>ดี</strong> (60% - 69%)</span>
+                      <span class="count-badge bg-info text-dark" id="countLevel3">0 คน</span>
+                    </div>
+                    <div class="level-box-item">
+                      <span><i class="fa-solid fa-circle text-warning me-1"></i> <strong>พอใช้</strong> (50% - 59%)</span>
+                      <span class="count-badge bg-warning text-dark" id="countLevel2">0 คน</span>
+                    </div>
+                    <div class="level-box-item">
+                      <span><i class="fa-solid fa-circle text-danger me-1"></i> <strong>ปรับปรุง</strong> (ต่ำกว่า 50%)</span>
+                      <span class="count-badge bg-danger" id="countLevel1">0 คน</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="card card-section h-100">
+              <div class="card-header card-header-gradient">
+                <i class="fa-solid fa-chart-column me-2"></i> กราฟแท่งข้อมูลแยกตามกลุ่มสาระฯ
+              </div>
+              <div class="card-body p-3" style="position: relative; height: 320px;">
+                <canvas id="deptBarChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="card card-section h-100">
+              <div class="card-header card-header-gradient">
+                <i class="fa-solid fa-table-list me-2"></i> ตารางสรุปผลข้อมูลแยกตามกลุ่มสาระฯ
+              </div>
+              <div class="card-body p-0 table-responsive" style="max-height: 340px;">
+                <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                  <thead class="table-light sticky-top">
+                    <tr>
+                      <th>กลุ่มสาระการเรียนรู้ / หน่วยงาน</th>
+                      <th class="text-center">จำนวนครู (คน)</th>
+                      <th class="text-center">ค่าเฉลี่ย</th>
+                      <th class="text-center">ร้อยละ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboardDeptSummary">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: รายงาน -->
+      <div id="tab5" class="tab-content-item d-none">
+        <div class="card card-section">
+          <div class="card-header card-header-custom"><i class="fa-solid fa-file-invoice"></i> รายงานผลงานนิเทศการศึกษา แยกตามกลุ่มสาระฯ</div>
+          <!-- การ์ดออกรายงานภาพรวมโรงเรียน -->
+        <div class="card mb-4 border-left-danger shadow-sm">
+          <div class="card-body d-flex justify-content-between align-items-center bg-light rounded">
+            <div>
+              <h5 class="m-0 font-weight-bold text-dark">
+                <i class="fa-solid fa-building"></i> รายงานสรุปผลการนิเทศภาพรวมโรงเรียน
+              </h5>
+              <small class="text-muted">สรุปผลการประเมินครูทุกกลุ่มสาระการเรียนรู้ทั้งโรงเรียน</small>
+            </div>
+            <button class="btn btn-danger px-4" onclick="generateSchoolReport()">
+              <i class="fa-solid fa-file-pdf me-1"></i> รายงานสรุปภาพรวมโรงเรียน
+            </button>
+          </div>
+        </div>
+          <div class="card-body p-4">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr><th>กลุ่มสาระการเรียนรู้ / หน่วยงาน</th><th class="text-center">การจัดการ</th></tr>
+              </thead>
+              <tbody id="deptReportTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- JS Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/th.js"></script>
+
+<script>
+  let calendarInstance = null;
+  let pieChartInstance = null;
+  let barChartInstance = null;
+  let canvas, ctx, isDrawing = false;
+  let formOptionsCache = null;
+
+  const monthsTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+  // ===== รายชื่อครู/บุคลากรตั้งต้น (master list) — ให้ช่อง "ชื่อผู้สอน" (ลงทะเบียนปฏิทิน) และ
+  // "ชื่อครูผู้ร่วมนิเทศ" (ตอนที่ 5) ค้นหาได้ทันทีตั้งแต่เปิดใช้งานระบบ โดยไม่ต้องรอให้มีข้อมูลใน
+  // ชีตก่อน ระบบจะรวมรายชื่อนี้เข้ากับรายชื่อที่เคยถูกบันทึกจริงจากเซิร์ฟเวอร์ (getFormOptions) ให้
+  // อัตโนมัติเสมอ (ดู getTeacherNameOptions()) — ถ้ามีครู/บุคลากรใหม่ที่ยังไม่อยู่ในลิสต์นี้ ผู้ใช้ยัง
+  // พิมพ์ชื่อเองในช่องได้ตามปกติ เพราะช่องยังเป็นกล่องข้อความธรรมดา ไม่ได้บังคับเลือกจากลิสต์เท่านั้น
+  // (ต้องการเพิ่ม/แก้ชื่อภายหลัง แก้ไขได้ตรงนี้ที่เดียว)
+  const MASTER_TEACHER_NAMES = [
+    "นายอรรถพร สารานพกุล", "นางโนรี สลีมีน", "นายภูวรา อาชว์ปุริม", "นางสาวสุพรรณี ยูฮันนัน",
+    "นางสาวอรปรียา อารมณ์ไวย", "นางสาวศิรินาถ ช่วยรอด", "นางสาวธาวินี หลีจ้วน", "นางสาวสุทธิดา ศิรินุพงษ์",
+    "นางอัมภาพันธ์ จิเบ็ญจะ", "นางฉ๊ะ หมาดมาสัน", "นางสาวพรพิสุทธิ์ มียัง", "นางสาวสุภาพร ละอองวิจิตร",
+    "นางอุไรวรรณ ปะดูกา", "นางกนกเลขา เจริญผล", "นายอาหมาด หลังปูเต๊ะ", "นางจรียะ หมันใจดี",
+    "นางสาวณัฐชา พรหมหิตาธร", "นางสาวฮาบีบ๊ะ ปากบารา", "นางสาวฟารีด๊ะ สันตี", "นางปรินดา ขุนแผน",
+    "นายประดิษฐ์ คงอินทร์", "นางสาวกฤษณา เด่นกาญจนศักดิ์", "นางวาสินี ขจีรัมย์", "ว่าที่ ร.ต.หญิงเจ๊ะอับเซ๊าะ กาสาเอก",
+    "นางศลิษา มูสิกวงศ์", "นางสิริลักษณ์ ดวงตา", "นายประสิทธิ์ สืบจักษะ", "นางณัฎฐา กั่วพานิช",
+    "นายอาร์ซีมาด เหมจำ", "นางจรัสศรี ไชยกุล", "นางรุจรวี มุณีแนม", "นางซูไรดา ล่านุ้ย",
+    "นางโรฮานา มนูญดาหวี", "นางราตรี คงสุข", "ว่าที่ ร.ต.ดนตอเหลบ รอโสนล๊ะ", "นางสาวจินตนา อุบล",
+    "นางสาวนูรีซัน ตาเดอิน", "นายอยุวัฒน์ วรรณโร", "นางสาวเพชรอนงค์ จิเหม", "นางสาวอังศนา สันนก",
+    "นางสาวฟารีณา หมาดเต๊ะ", "นายอานัส มะแอเคียน", "นางสาวอรพรรณ ชำนาญ", "นางนันทวดี ช่างเหล็ก",
+    "นางพิชยา ระธารมณ์", "นางสาวฐรินดา สังยาหยา", "นางสาวณัฐปภัสร์ บุญญธรนันท์", "นายณัฐวุฒิ ยาแม",
+    "นายชยพร แซ่ลิ้ม", "นายมุมีนีน ดำท่าคลอง", "นายณัฐวุฒิ โตะแปเราะ", "นางสาวอัมมีญา กุมบ้าน",
+    "นางสาววัลลา ใบบาว", "นางสาวสาวิณี สิทธิชัย", "นางนริญญา ทองอยู่", "นางสาวกาญจนาภรณ์ อนุพงศ์",
+    "นางสาวอริสา ปิดนุ้ย", "นางนภคกร ไชยกาญจน์", "นายภาณุวัฒน์ ฉิมอินทร์", "นางสาวเกตสริน ลางีตัน",
+    "นางสาวเกษศินี ตองอบ", "นายพล เพ็ญสวัสดิ์", "นายอดุลย์ เจ๊ะบา", "นางสาวนุอัยม์ หลง",
+    "นางสาวกฤตยาพร พวงมณี", "นางพิชามญชุ์ ทองกรด", "นางอรัญญา สนูบุตร", "นางปิยะนุช พันกาแด",
+    "นางสาวสุนทรี ศุทธิวรรณรักษ์", "นางเจ๊ะโสม ขุนฤทธิ์", "นางสาวธนันณัฏฐ์ ชูหะรัญ", "นางสาวมาซีต๊ะ หลังจิ",
+    "นางสาวปารียา ประทีปวัฒนพันธ์", "นางสาวโรสนานี กาสอ", "นางสาวมณีรัตน์ บุญเรือง", "นางสาวนภิสรา เส็นติระ",
+    "นางสาวชุลีกร โกโสตร", "นางสาวริฎา เจะมา", "นางยามีล๊ะ รอเหมมัน", "นางสาวแก้วใจ ยะระ",
+    "นายยศพนธ์ ศรีขวัญ", "นายสุริยา หลีเส็น", "นายประยุกต์ ยุทธกาศ", "นายอาบัส งะเจ๊ะ",
+    "นายอิฟฟาน พันหวัง", "นางสาวสุนารี ธรรมราช", "นางสาวชนิดา สวัสดี", "นายสิริพล เหมือนพะวงศ์",
+    "นายศิริพงศ์ นุ่นคง", "นางสาวมาเรียม หวันกะเหร็ม", "นางสาวฮับเศาะ อุมารี", "นางสาวจุฑาทิพย์ เอี่ยมปิยะกุล",
+    "นายอับดลรอศักดิ์ อาลี", "นายเอกพล รองเดช", "นางสาวอุณากรรณ สันติธรรมรัตน์", "นางสาวฉัตรกมล เหมตะศิลป์",
+    "นายนิธิศ เตชะโต", "นายฮาริด ลีลานนท์", "นางพรรณนิภา ศรีวรรณ์", "นางสาววิกานดา เล๊ะสัน",
+    "นางสาวนิภา ถกเอียด", "นายสุวิจักขณ์ ศรีหมั่น"
+  ];
+
+  // ===== ตำแหน่ง/วิทยฐานะมาตรฐาน — ใช้เป็นตัวเลือกช่อง "ตำแหน่ง" ทุกจุดในระบบ (ลงทะเบียนปฏิทิน,
+  // ตอนที่ 1 ของแบบประเมิน, ตอนที่ 5 ผู้ร่วมนิเทศ) เรียงตามลำดับนี้เสมอ ไม่ใช่เรียงตามตัวอักษร =====
+  const POSITION_OPTIONS = [
+    "ครูอัตราจ้าง", "ครูผู้ช่วย", "ครู", "ครู คศ.1", "ครู คศ.2 (ชำนาญการ)",
+    "ครู คศ.3 (ชำนาญการพิเศษ)", "ครู คศ.4 (เชี่ยวชาญ)", "ครู คศ.5 (เชี่ยวชาญพิเศษ)",
+    "ผู้อำนวยการโรงเรียน", "รองผู้อำนวยการโรงเรียน", "พนักงานราชการ"
+  ];
+
+  // ใส่ลิงก์รูปตราโรงเรียนตรงนี้ (เช่น https://lh3.googleusercontent.com/d/FILE_ID) เพื่อให้โลโก้จริงแสดงแทนไอคอน
+  const SCHOOL_LOGO_URL = "https://raw.githubusercontent.com/phiman-2026/picture/main/logo%20phiman.png";
+
+  // ===== ตั้งค่าการเชื่อมต่อ Google Apps Script Web App =====
+  // ใส่ URL ของเว็บแอปที่ deploy แล้ว (Apps Script Editor > Deploy > Manage deployments)
+  // ต้องลงท้ายด้วย /exec เท่านั้น (ห้ามใช้ URL แบบ /dev เพราะใช้ได้เฉพาะบัญชีที่ล็อกอินแก้โค้ดอยู่)
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyd1K9s042R0LAa-wgWlObh3Js-nxoOEszD_G5E2ukn2YdanQFnF-GL5MDbjrYOGNet/exec";
+
+  /**
+   * เรียกฟังก์ชันฝั่งเซิร์ฟเวอร์ (Code.gs) ผ่าน API แทน google.script.run
+   * คืนค่าเป็น Promise: resolve(data ที่ฟังก์ชันนั้น return) หรือ reject(Error) เมื่อฝั่งเซิร์ฟเวอร์
+   * โยน error หรือเชื่อมต่อไม่สำเร็จ — ใช้แทนที่ .withSuccessHandler()/.withFailureHandler() เดิม
+   *
+   * หมายเหตุ: จงใจส่ง Content-Type เป็น "text/plain;charset=utf-8" (ไม่ใช่ application/json)
+   * เพื่อให้เบราว์เซอร์มองว่าเป็น "simple request" และไม่ยิง CORS preflight (OPTIONS) มาก่อนส่งจริง
+   * เพราะ Apps Script Web App ไม่รองรับการตอบ preflight request เอง ถ้าส่งเป็น application/json
+   * จะถูก browser บล็อกตั้งแต่ขั้นตอน preflight ก่อนคำขอจริงจะไปถึงเซิร์ฟเวอร์ด้วยซ้ำ
+   */
+  function callServer(action, params) {
+    if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.indexOf('XXXX') !== -1) {
+      return Promise.reject(new Error('ยังไม่ได้ตั้งค่า GAS_WEB_APP_URL — กรุณาแก้ไขค่านี้ในไฟล์ index.html ให้เป็น URL ของเว็บแอปที่ deploy แล้ว (ลงท้ายด้วย /exec)'));
+    }
+    return fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: action, params: params || [] })
+    })
+      .then(function(res) {
+        if (!res.ok) throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด (HTTP ' + res.status + ')');
+        return res.json();
+      })
+      .then(function(json) {
+        if (!json || json.status === 'error') {
+          throw new Error((json && json.message) || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุจากเซิร์ฟเวอร์');
+        }
+        return json.data;
+      });
+  }
+
+  const sections = [
+    {
+      title: "ด้านการออกแบบการเรียนรู้",
+      icon: "fa-compass-drafting",
+      items: [
+        "1. การจัดทำหน่วยการเรียนรู้ และแผนการจัดการเรียนรู้ สอดคล้องกับมาตรฐานการเรียนรู้ และตัวชี้วัด/ผลการเรียนรู้",
+        "2. การออกแบบกิจกรรมการเรียนรู้เน้นผู้เรียนเป็นสำคัญ ส่งเสริมการเรียนรู้เชิงรุก (Active Learning)",
+        "3. การออกแบบกิจกรรมการเรียนรู้คำนึงถึงความแตกต่างระหว่างบุคคลของผู้เรียน",
+        "4. การเลือกใช้และจัดหาแหล่งเรียนรู้ สื่อ นวัตกรรม เทคโนโลยีที่เหมาะสมกับกิจกรรม",
+        "5. การวางแผนการวัดและประเมินผลการเรียนรู้ด้วยวิธีการที่หลากหลายตามสภาพจริง"
+      ]
+    },
+    {
+      title: "ด้านการจัดการเรียนรู้",
+      icon: "fa-chalkboard-user",
+      items: [
+        "6. จัดกิจกรรมการเรียนรู้ที่เปิดโอกาสให้ผู้เรียนได้ลงมือปฏิบัติจริง (Hands-on / Action-based)",
+        "7. ใช้คำถามกระตุ้นการคิด ท้าทาย และส่งเสริมทักษะการคิดวิเคราะห์ของผู้เรียน",
+        "8. มีการใช้เทคนิคและวิธีการสอนที่หลากหลาย เหมาะสมกับเนื้อหาและผู้เรียน",
+        "9. การบริหารจัดการเวลาในการทำกิจกรรมการเรียนรู้ได้อย่างเหมาะสมและยืดหยุ่น",
+        "10. ครูทำหน้าที่เป็นผู้อำนวยความสะดวก (Facilitator) และให้คำแนะนำแก่ผู้เรียนอย่างใกล้ชิด"
+      ]
+    },
+    {
+      title: "ด้านการจัดบรรยากาศการเรียนรู้",
+      icon: "fa-laptop-code",
+      items: [
+        "11. สร้างบรรยากาศการเรียนรู้ที่เป็นมิตร เชิงบวก ปลอดภัย และส่งเสริมการมีส่วนร่วม",
+        "12. บริหารจัดการชั้นเรียน ควบคุมวินัย และแก้ไขปัญหาเฉพาะหน้าในชั้นเรียนได้ดี",
+        "13. มีการเลือกใช้สื่อ เทคโนโลยี และนวัตกรรมดิจิทัลที่น่าสนใจ และสอดคล้องกับเนื้อหา",
+        "14. เปิดโอกาสให้ผู้เรียนได้ใช้สื่อหรือเทคโนโลยีในการค้นคว้าและสร้างสรรค์ชิ้นงาน",
+        "15. การเชื่อมโยงเนื้อหาและสื่อการเรียนรู้กับชีวิตจริงหรือสถานการณ์ปัจจุบัน"
+      ]
+    },
+    {
+      title: "ด้านการใช้สื่อ เทคโนโลยี และแหล่งเรียนรู้",
+      icon: "fa-square-check",
+      items: [
+        "16. มีการแนะนำการใช้เทคโนโลยีสารสนเทศอย่างถูกต้อง ปลอดภัย และมีจริยธรรม",
+        "17. มีการวัดและประเมินผลผู้เรียนตามสภาพจริงด้วยเครื่องมือและวิธีที่หลากหลาย",
+        "18. มีการประเมินเพื่อพัฒนาการเรียนรู้ (Formative Assessment) ระหว่างการจัดกิจกรรม",
+        "19. มีการให้ข้อมูลสะท้อนกลับ (Feedback) ที่เป็นประโยชน์และทันท่วงทีแก่ผู้เรียน",
+        "20. นำผลการประเมินมาปรับปรุงและพัฒนาการจัดการเรียนรู้ในคาบเรียนอย่างต่อเนื่อง"
+      ]
+    },
+    {
+      title: "ด้านการวัดและประเมินผลการเรียนรู้",
+      icon: "fa-user-tie",
+      items: [
+        "21. ตรงต่อเวลา มีการเตรียมความพร้อมในการจัดการเรียนรู้ล่วงหน้า",
+        "22. สื่อสารกับผู้เรียนด้วยน้ำเสียง ท่าทาง และภาษาที่สุภาพ และเข้าใจง่าย",
+        "23. เปิดใจรับฟังความคิดเห็น คำติชม และข้อเสนอแนะจากผู้ร่วมนิเทศ (Co-Supervisor)",
+        "24. มีกระบวนการสะท้อนคิด (Reflection) หลังการสอนเพื่อพัฒนาตนเอง",
+        "25. มีความมุ่งมั่นในการพัฒนาการจัดการเรียนรู้เพื่อประโยชน์สูงสุดของผู้เรียน"
+      ]
+    }
+  ];
+
+  window.onload = function() {
+    if (SCHOOL_LOGO_URL) {
+      document.getElementById('schoolLogoImg').src = SCHOOL_LOGO_URL;
+      document.getElementById('schoolLogoImg').classList.remove('d-none');
+      document.getElementById('schoolLogoFallback').classList.add('d-none');
+    }
+    initEvalDateSelectors();
+    renderQuestions();
+    initCanvas();
+    initCalendar();
+    initPositionSelects();
+    initTeacherNameCombos();
+    loadFormOptions();
+    setupEvaluatorOrderWatcher();
+  };
+
+  function switchTab(tabId, btnEl) {
+    document.querySelectorAll('.tab-content-item').forEach(el => el.classList.add('d-none'));
+
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) {
+      targetTab.classList.remove('d-none');
+    }
+
+    document.querySelectorAll('.sidebar .nav-link').forEach(btn => btn.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+
+    if (tabId === 'tab1') {
+      loadFormOptions(); // รีเฟรชตัวเลือก/รายการปฏิทินให้ทันสมัย (ค่าที่กรอกไว้แล้วจะไม่หาย ดู renderPart1SelectFields)
+    }
+
+    if (tabId === 'tab2' && calendarInstance) {
+      setTimeout(() => { calendarInstance.updateSize(); calendarInstance.refetchEvents(); }, 50);
+    }
+
+    if (tabId === 'tab4') {
+      setTimeout(() => { loadDashboardData(); }, 100);
+    }
+
+    if (tabId === 'tab5') loadDeptReportList();
+  }
+
+  // ===== ตอนที่ 1: ช่องแบบตัวเลือก (select) พร้อม "อื่นๆ / พิมพ์เอง" และตัวช่วยเลือกจากปฏิทิน =====
+
+  const PART1_SELECT_FIELDS = [
+    { key: 'teacherName', label: 'ชื่อผู้สอน', required: true, optionsKey: 'teacherNames' },
+    { key: 'position', label: 'ตำแหน่ง', required: true, optionsKey: 'positions' },
+    { key: 'subject', label: 'รายวิชา', required: true, optionsKey: 'subjects' },
+    { key: 'code', label: 'รหัสวิชา', required: false, optionsKey: 'codes' },
+    { key: 'grade', label: 'ชั้น', required: false, optionsKey: 'grades' },
+    { key: 'room', label: 'ห้อง', required: false, optionsKey: 'rooms' },
+    { key: 'period', label: 'คาบที่', required: false, optionsKey: 'periods' }
+  ];
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, function(m) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+    });
+  }
+
+  // ===== ตำแหน่ง: เติมตัวเลือกช่อง select ตำแหน่ง (ลงทะเบียนปฏิทิน + ตอนที่ 5) จาก POSITION_OPTIONS
+  // ที่กำหนดลำดับไว้ตายตัว (ไม่ใช้รายการที่เซิร์ฟเวอร์ส่งมาซึ่งเรียงตามตัวอักษร) =====
+  function positionOptionsHtml() {
+    let html = '<option value="">-- เลือกตำแหน่ง --</option>';
+    POSITION_OPTIONS.forEach(function(p) {
+      html += '<option value="' + escapeHtml(p) + '">' + escapeHtml(p) + '</option>';
+    });
+    return html;
+  }
+
+  function initPositionSelects() {
+    ['calPositionSelect', 'evaluatorPositionSelect'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = positionOptionsHtml();
+    });
+  }
+
+  // ===== ชื่อผู้สอน/ผู้ร่วมนิเทศ: รวม MASTER_TEACHER_NAMES เข้ากับรายชื่อจริงจากเซิร์ฟเวอร์
+  // (formOptionsCache.teacherNames) เป็นรายการเดียวไว้ป้อนให้ combobox ค้นหา =====
+  function getTeacherNameOptions() {
+    const dynamic = (formOptionsCache && formOptionsCache.teacherNames) || [];
+    const set = {};
+    MASTER_TEACHER_NAMES.forEach(function(n) { set[n] = true; });
+    dynamic.forEach(function(n) { if (n) set[n] = true; });
+    return Object.keys(set).sort();
+  }
+
+  /**
+   * ผูกช่อง input ให้เป็น "combobox" พิมพ์ค้นหาได้ — กรองรายการที่ตรงกับข้อความที่พิมพ์ ให้คลิกเลือก
+   * (หรือกดลูกศรขึ้น/ลง + Enter) ได้ทันที แต่ตัวช่องยังเป็น input ข้อความธรรมดา จึงพิมพ์ชื่อที่ยังไม่มี
+   * ในลิสต์เองได้ตามปกติเช่นกัน ไม่ได้บังคับให้เลือกจากลิสต์เท่านั้น
+   */
+  function initSearchableCombobox(inputId, panelId, getOptionsFn) {
+    const input = document.getElementById(inputId);
+    const panel = document.getElementById(panelId);
+    if (!input || !panel) return;
+
+    let items = [];
+    let activeIndex = -1;
+
+    function renderList() {
+      const all = getOptionsFn() || [];
+      const q = input.value.trim().toLowerCase();
+      items = (q ? all.filter(function(v) { return String(v).toLowerCase().indexOf(q) !== -1; }) : all).slice(0, 8);
+      activeIndex = -1;
+      if (items.length === 0) {
+        panel.innerHTML = q ? '<div class="combo-empty">ไม่พบชื่อที่ตรงกัน — พิมพ์ต่อเพื่อระบุชื่อเองได้เลย</div>' : '';
+        panel.classList.toggle('d-none', !q);
+        return;
+      }
+      panel.innerHTML = items.map(function(v, i) {
+        return '<div class="combo-item" data-idx="' + i + '">' + escapeHtml(v) + '</div>';
+      }).join('');
+      panel.classList.remove('d-none');
+    }
+
+    function highlight(idx) {
+      const nodes = panel.querySelectorAll('.combo-item');
+      nodes.forEach(function(n) { n.classList.remove('active'); });
+      if (idx >= 0 && nodes[idx]) {
+        nodes[idx].classList.add('active');
+        nodes[idx].scrollIntoView({ block: 'nearest' });
+      }
+      activeIndex = idx;
+    }
+
+    input.addEventListener('input', renderList);
+    input.addEventListener('focus', renderList);
+    input.addEventListener('blur', function() { setTimeout(function() { panel.classList.add('d-none'); }, 150); });
+    input.addEventListener('keydown', function(e) {
+      if (panel.classList.contains('d-none') || items.length === 0) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); highlight(Math.min(activeIndex + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(Math.max(activeIndex - 1, 0)); }
+      else if (e.key === 'Enter') {
+        if (activeIndex >= 0 && items[activeIndex] != null) {
+          e.preventDefault();
+          input.value = items[activeIndex];
+          panel.classList.add('d-none');
+        }
+      } else if (e.key === 'Escape') {
+        panel.classList.add('d-none');
+      }
+    });
+    panel.addEventListener('mousedown', function(e) {
+      const item = e.target.closest('.combo-item');
+      if (!item) return;
+      e.preventDefault();
+      const idx = Number(item.getAttribute('data-idx'));
+      if (items[idx] != null) input.value = items[idx];
+      panel.classList.add('d-none');
+    });
+  }
+
+  function initTeacherNameCombos() {
+    initSearchableCombobox('calTeacherNameInput', 'calTeacherNameList', getTeacherNameOptions);
+    initSearchableCombobox('evaluatorNameInput', 'evaluatorNameList', getTeacherNameOptions);
+  }
+
+  function renderPart1SelectFields(options) {
+    options = options || {};
+    PART1_SELECT_FIELDS.forEach(function(f) {
+      const wrap = document.getElementById('fieldWrap_' + f.key);
+      if (!wrap) return;
+
+      const prevValue = getFieldValue(f.key); // เก็บค่าที่เลือกไว้ก่อนหน้า กันหายตอนรีเฟรชตัวเลือก
+      const listId = 'sel_' + f.key;
+      const otherId = 'other_' + f.key;
+      const opts = (f.key === 'position') ? POSITION_OPTIONS : (options[f.optionsKey] || []);
+
+      let optionsHtml = '<option value="">-- เลือก --</option>';
+      opts.forEach(function(v) {
+        optionsHtml += '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>';
+      });
+      optionsHtml += '<option value="__other__">+ เพิ่มรายการใหม่ / พิมพ์เอง</option>';
+
+      wrap.innerHTML =
+        '<label class="form-label">' + f.label + '</label>' +
+        '<select id="' + listId + '" class="form-select"' + (f.required ? ' required' : '') +
+        ' onchange="toggleOtherInput(\'' + listId + '\',\'' + otherId + '\')">' + optionsHtml + '</select>' +
+        '<input type="text" id="' + otherId + '" class="form-control mt-2 d-none" placeholder="พิมพ์' + escapeHtml(f.label) + '...">';
+
+      if (prevValue) setFieldValue(f.key, prevValue);
+    });
+  }
+
+  function toggleOtherInput(selectId, otherId) {
+    const sel = document.getElementById(selectId);
+    const other = document.getElementById(otherId);
+    if (!sel || !other) return;
+    if (sel.value === '__other__') {
+      other.classList.remove('d-none');
+    } else {
+      other.classList.add('d-none');
+    }
+  }
+
+  function getFieldValue(key) {
+    const sel = document.getElementById('sel_' + key);
+    if (!sel) return '';
+    if (sel.value === '__other__') {
+      const other = document.getElementById('other_' + key);
+      return other ? other.value.trim() : '';
+    }
+    return sel.value;
+  }
+
+  function setFieldValue(key, value) {
+    const sel = document.getElementById('sel_' + key);
+    const other = document.getElementById('other_' + key);
+    if (!sel || !other) return;
+    const exists = Array.from(sel.options).some(function(o) { return o.value === value; });
+    if (value === '') {
+      sel.value = '';
+      other.classList.add('d-none');
+    } else if (exists) {
+      sel.value = value;
+      other.classList.add('d-none');
+    } else {
+      sel.value = '__other__';
+      other.value = value;
+      other.classList.remove('d-none');
+    }
+  }
+
+  function loadFormOptions() {
+    if (!formOptionsCache) {
+      renderPart1SelectFields({}); // แสดงช่อง "พิมพ์เอง" ไปพลางๆ ระหว่างรอโหลดตัวเลือกจากเซิร์ฟเวอร์
+    }
+    callServer('getFormOptions', [])
+      .then(function(options) {
+        formOptionsCache = options;
+        renderPart1SelectFields(options);
+        populateScheduleSelect(options.schedules || []);
+      })
+      .catch(function(err) {
+        console.error('โหลดตัวเลือกฟอร์มไม่สำเร็จ', err);
+        if (!formOptionsCache) renderPart1SelectFields({});
+      });
+  }
+
+  function populateScheduleSelect(schedules) {
+    const sel = document.getElementById('scheduleSelect');
+    if (!sel) return;
+    let html = '<option value="">-- ไม่พบในปฏิทิน / กรอกข้อมูลด้านล่างเอง --</option>';
+    schedules.forEach(function(s, idx) {
+      const label = s.teacherName + ' | ' + s.subject + ' ม.' + s.grade + '/' + s.room +
+        ' คาบ ' + s.period + ' | ' + formatThaiDateShort(s.date);
+      html += '<option value="' + idx + '">' + escapeHtml(label) + '</option>';
+    });
+    sel.innerHTML = html;
+    sel._schedules = schedules;
+  }
+
+  function applySchedule(idx) {
+    const sel = document.getElementById('scheduleSelect');
+    if (idx === '' || !sel || !sel._schedules) return;
+    const s = sel._schedules[Number(idx)];
+    if (!s) return;
+
+    setFieldValue('teacherName', s.teacherName);
+    setFieldValue('position', s.position);
+    setFieldValue('subject', s.subject);
+    setFieldValue('code', s.code);
+    setFieldValue('grade', s.grade);
+    setFieldValue('room', s.room);
+    setFieldValue('period', s.period);
+    const deptSel = document.getElementById('selDepartment');
+    if (deptSel && s.department) deptSel.value = s.department;
+    if (s.date) setEvalDateFromISO(s.date);
+
+    const evalForm = document.getElementById('evalForm');
+    if (evalForm && evalForm.unit) evalForm.unit.value = s.unit || '';
+    if (evalForm && evalForm.lesson) evalForm.lesson.value = s.lesson || '';
+
+    const timeDisplay = document.getElementById('teachingTimeDisplay');
+    if (timeDisplay) {
+      if (s.time && s.timeEnd) {
+        timeDisplay.value = s.time + ' - ' + s.timeEnd + ' น.';
+      } else if (s.time) {
+        timeDisplay.value = s.time + ' น.';
+      } else {
+        timeDisplay.value = '';
+      }
+    }
+  }
+
+  // ===== ตอนที่ 1: วันที่ประเมิน (เลือกวัน/เดือน/ปี พ.ศ. แทนช่องวันที่แบบเดิม กันสับสนปี ค.ศ./พ.ศ.) =====
+
+  function initEvalDateSelectors() {
+    const daySel = document.getElementById('evalDay');
+    const monthSel = document.getElementById('evalMonth');
+    const yearSel = document.getElementById('evalYear');
+    if (!daySel || !monthSel || !yearSel) return;
+
+    let dayHtml = '';
+    for (let d = 1; d <= 31; d++) dayHtml += '<option value="' + d + '">' + d + '</option>';
+    daySel.innerHTML = dayHtml;
+
+    let monthHtml = '';
+    monthsTh.forEach(function(m, i) { monthHtml += '<option value="' + i + '">' + m + '</option>'; });
+    monthSel.innerHTML = monthHtml;
+
+    const nowBE = new Date().getFullYear() + 543;
+    let yearHtml = '';
+    for (let y = nowBE - 1; y <= nowBE + 1; y++) yearHtml += '<option value="' + y + '">' + y + '</option>';
+    yearSel.innerHTML = yearHtml;
+
+    const today = new Date();
+    daySel.value = today.getDate();
+    monthSel.value = today.getMonth();
+    yearSel.value = nowBE;
+  }
+
+  function setEvalDateFromISO(isoDateStr) {
+    const parts = String(isoDateStr).split('-');
+    if (parts.length !== 3) return;
+    const y = Number(parts[0]), m = Number(parts[1]) - 1, d = Number(parts[2]);
+    const daySel = document.getElementById('evalDay');
+    const monthSel = document.getElementById('evalMonth');
+    const yearSel = document.getElementById('evalYear');
+    if (daySel) daySel.value = d;
+    if (monthSel) monthSel.value = m;
+    if (yearSel) yearSel.value = y + 543;
+  }
+
+  function getEvalDateThaiString() {
+    const d = document.getElementById('evalDay').value;
+    const m = Number(document.getElementById('evalMonth').value);
+    const y = document.getElementById('evalYear').value;
+    return d + ' ' + monthsTh[m] + ' ' + y;
+  }
+
+  function formatThaiDateShort(isoDateStr) {
+    const parts = String(isoDateStr || '').split('-');
+    if (parts.length !== 3) return isoDateStr || '';
+    const y = Number(parts[0]) + 543, m = Number(parts[1]) - 1, d = Number(parts[2]);
+    return d + ' ' + (monthsTh[m] ? monthsTh[m].slice(0, 3) : '') + ' ' + y;
+  }
+
+  // ===== ตอนที่ 4: ยึดการแนบภาพไว้ที่ผู้ร่วมนิเทศ "คนที่ 1" เท่านั้น =====
+
+  function setupEvaluatorOrderWatcher() {
+    const sel = document.querySelector('select[name="evaluatorOrder"]');
+    if (!sel) return;
+    sel.addEventListener('change', updatePhotoSectionVisibility);
+    updatePhotoSectionVisibility();
+  }
+
+  function updatePhotoSectionVisibility() {
+    const sel = document.querySelector('select[name="evaluatorOrder"]');
+    const isPrimary = !sel || sel.value === 'คนที่ 1';
+    const photoBody = document.getElementById('photoUploadBody');
+    const photoNotice = document.getElementById('photoNonPrimaryNotice');
+    if (photoBody) photoBody.classList.toggle('d-none', !isPrimary);
+    if (photoNotice) photoNotice.classList.toggle('d-none', isPrimary);
+
+    if (!isPrimary) {
+      // เคลียร์ไฟล์ที่อาจเลือกไว้ก่อนหน้า กันหลุดแนบไปตอนส่งข้อมูลจริง
+      [1, 2, 3, 4].forEach(function(n) {
+        const input = document.getElementById('fileInput' + n);
+        if (input) input.value = '';
+        const prev = document.getElementById('imgPreview' + n);
+        const ph = document.getElementById('imgPlaceholder' + n);
+        if (prev) prev.classList.add('d-none');
+        if (ph) ph.classList.remove('d-none');
+      });
+    }
+  }
+
+  function renderQuestions() {
+    let html = '';
+    let qIndex = 1;
+    sections.forEach(sec => {
+      html += `<div class="section-title-red"><i class="fa-solid ${sec.icon} me-1"></i> ${sec.title}</div>`;
+      sec.items.forEach(qText => {
+        html += `
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center py-2 border-bottom">
+          <div class="pe-3 mb-2 mb-md-0" style="font-size: 14px;">${qText}</div>
+          <div class="rating-box">
+            ${[5, 4, 3, 2, 1].map(score => `
+              <input type="radio" id="q${qIndex}_${score}" name="q${qIndex}" value="${score}" required>
+              <label for="q${qIndex}_${score}">${score}</label>
+            `).join('')}
+          </div>
+        </div>`;
+        qIndex++;
+      });
+    });
+    document.getElementById('questionsContainer').innerHTML = html;
+  }
+
+  function previewImage(input, previewId, placeholderId) {
+    const preview = document.getElementById(previewId);
+    const placeholder = document.getElementById(placeholderId);
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.classList.remove('d-none');
+        if (placeholder) placeholder.classList.add('d-none');
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  function initCanvas() {
+    canvas = document.getElementById('sigCanvas');
+    ctx = canvas.getContext('2d');
+
+    // รองรับทั้งเมาส์, มือถือ และ iPad/Stylus
+    canvas.addEventListener('pointerdown', (e) => {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#000';
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.stroke();
+    });
+
+    canvas.addEventListener('pointerup', () => { isDrawing = false; ctx.beginPath(); });
+  }
+
+  function clearSig() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+  function isCanvasBlank(c) {
+    const blank = document.createElement('canvas');
+    blank.width = c.width;
+    blank.height = c.height;
+    return c.toDataURL() === blank.toDataURL();
+  }
+
+  function initCalendar() {
+    calendarInstance = new FullCalendar.Calendar(document.getElementById('calendar'), {
+      initialView: 'dayGridMonth',
+      locale: 'th',
+      height: 'auto',
+      events: function(info, successCallback, failureCallback) {
+        callServer('getCalendarEvents', [])
+          .then(function(events) {
+            events = events || [];
+            const countEl = document.getElementById('calendarEventCount');
+            if (countEl) countEl.textContent = '(โหลดกิจกรรมได้ ' + events.length + ' รายการ)';
+            successCallback(events);
+          })
+          .catch(function(err) {
+            const countEl = document.getElementById('calendarEventCount');
+            if (countEl) countEl.textContent = '(โหลดปฏิทินไม่สำเร็จ)';
+            Swal.fire('โหลดปฏิทินไม่สำเร็จ', (err && err.message) || String(err), 'error');
+            failureCallback(err);
+          });
+      },
+      eventClick: function(info) {
+        const p = info.event.extendedProps;
+        const html = '<div class="text-start" style="font-size:14px;">' +
+          '<p class="mb-1"><strong>ผู้สอน:</strong> ' + escapeHtml(p.teacherName || '-') + (p.position ? ' (' + escapeHtml(p.position) + ')' : '') + '</p>' +
+          '<p class="mb-1"><strong>วิชา:</strong> ' + escapeHtml(p.subject || '-') + (p.code ? ' (' + escapeHtml(p.code) + ')' : '') + ' ม.' + escapeHtml(p.grade || '-') + '/' + escapeHtml(p.room || '-') + ' คาบ ' + escapeHtml(p.period || '-') + '</p>' +
+          (p.unit || p.lesson ? '<p class="mb-1"><strong>หน่วย/เรื่อง:</strong> ' + escapeHtml(p.unit || '-') + ' / ' + escapeHtml(p.lesson || '-') + '</p>' : '') +
+          '<hr class="my-2">' +
+          '<p class="mb-1"><strong>ทีม PLC:</strong> ' + escapeHtml(p.plcTeamName || '-') + '</p>' +
+          '<p class="mb-1"><strong>Model Teacher:</strong> ' + escapeHtml(p.modelTeacher || '-') + '</p>' +
+          '<p class="mb-1"><strong>Buddy Teacher:</strong> ' + escapeHtml(p.buddyTeacher1 || '-') + ' , ' + escapeHtml(p.buddyTeacher2 || '-') + '</p>' +
+          '<p class="mb-1"><strong>Mentor:</strong> ' + escapeHtml(p.mentor || '-') + '</p>' +
+          '<p class="mb-1"><strong>Expert:</strong> ' + escapeHtml(p.expert || '-') + '</p>' +
+          '<p class="mb-1"><strong>Administrator:</strong> ' + escapeHtml(p.administrator || '-') + '</p>' +
+          '</div>';
+        Swal.fire({ title: info.event.title, html: html, confirmButtonText: 'ปิด' });
+      }
+    });
+    calendarInstance.render();
+  }
+
+  // ===== ตอนที่ 1: บันทึกแบบประเมิน =====
+  function submitEvaluationForm() {
+    const form = document.getElementById('evalForm');
+
+    // ตรวจสอบว่าตอบครบทั้ง 25 ข้อหรือยัง
+    for (let i = 1; i <= 25; i++) {
+      if (!form.querySelector(`input[name="q${i}"]:checked`)) {
+        Swal.fire('ข้อมูลไม่ครบ', 'กรุณาตอบแบบประเมินให้ครบทั้ง 25 ข้อ', 'warning');
+        return;
+      }
+    }
+
+    const teacherName = getFieldValue('teacherName');
+    const position = getFieldValue('position');
+    const subject = getFieldValue('subject');
+    const code = getFieldValue('code');
+    const grade = getFieldValue('grade');
+    const room = getFieldValue('room');
+    const period = getFieldValue('period');
+    const department = document.getElementById('selDepartment').value;
+
+    if (!teacherName || !position || !department || !subject) {
+      Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือก/กรอก ชื่อผู้สอน ตำแหน่ง กลุ่มสาระ และรายวิชา ให้ครบ', 'warning');
+      return;
+    }
+    if (!form.evaluatorName.value) {
+      Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกชื่อครูผู้ร่วมนิเทศ', 'warning');
+      return;
+    }
+
+    const evaluatorOrder = form.evaluatorOrder.value;
+    const isPrimaryEvaluator = (evaluatorOrder === 'คนที่ 1');
+
+    const data = {
+      evalDate: getEvalDateThaiString(),
+      teacherName: teacherName,
+      position: position,
+      department: department,
+      subject: subject,
+      code: code,
+      credits: "",
+      grade: grade,
+      room: room,
+      period: period,
+      unit: form.unit.value,
+      lesson: form.lesson.value,
+      comment: form.suggestions.value,
+      evaluatorName: form.evaluatorName.value,
+      evaluatorPosition: form.evaluatorPosition.value,
+      evaluatorOrder: evaluatorOrder,
+      signature: isCanvasBlank(canvas) ? "" : canvas.toDataURL('image/png'),
+      photos: [],
+      teachingTime: document.getElementById('teachingTimeDisplay').value
+    };
+
+    for (let i = 1; i <= 25; i++) {
+      const checked = form.querySelector(`input[name="q${i}"]:checked`);
+      data['q' + i] = checked ? checked.value : 0;
+    }
+
+    Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    if (!isPrimaryEvaluator) {
+      // ผู้ร่วมนิเทศที่ไม่ใช่คนที่ 1 ไม่ต้องอ่าน/แนบรูปภาพเลย (ยึดภาพไว้ที่คนที่ 1 เท่านั้น)
+      saveEvaluationToServer(data);
+      return;
+    }
+
+    // อ่านรูปภาพทั้ง 4 ช่องเป็น base64 ก่อนส่ง (ช่องที่ไม่ได้แนบจะข้าม)
+    const fileInputs = [1, 2, 3, 4].map(n => document.getElementById('fileInput' + n));
+    const readers = fileInputs.map(input => new Promise(resolve => {
+      if (input.files && input.files[0]) {
+        const r = new FileReader();
+        r.onload = e => resolve(e.target.result);
+        r.readAsDataURL(input.files[0]);
+      } else {
+        resolve(null);
+      }
+    }));
+
+    Promise.all(readers).then(function(photoResults) {
+      data.photos = photoResults.filter(p => p);
+      saveEvaluationToServer(data);
+    });
+  }
+
+  function saveEvaluationToServer(data) {
+    callServer('saveEvaluation', [data])
+      .then(function() {
+        Swal.fire('สำเร็จ!', 'บันทึกข้อมูลการประเมินเรียบร้อยแล้ว', 'success').then(() => location.reload());
+      })
+      .catch(function(error) {
+        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+      });
+  }
+
+  // ===== ตอนที่ 2: บันทึกปฏิทิน =====
+  function submitCalendarForm() {
+    const form = document.getElementById('calForm');
+
+    if (form.eventTimeStart.value && form.eventTimeEnd.value && form.eventTimeEnd.value <= form.eventTimeStart.value) {
+      Swal.fire('เวลาไม่ถูกต้อง', 'เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น', 'warning');
+      return;
+    }
+
+    const data = {
+      teacherName: form.teacherName.value,
+      position: form.position.value,
+      department: form.department.value,
+      subject: form.subject.value,
+      code: form.code.value,
+      grade: form.grade.value,
+      room: form.room.value,
+      unit: form.unit.value,
+      lesson: form.lesson.value,
+      period: form.period.value,
+      eventDate: form.eventDate.value,
+      eventTimeStart: form.eventTimeStart.value,
+      eventTimeEnd: form.eventTimeEnd.value,
+      plcTeamName: form.plcTeamName.value,
+      modelTeacher: form.modelTeacher.value,
+      buddyTeacher1: form.buddyTeacher1.value,
+      buddyTeacher2: form.buddyTeacher2.value,
+      mentor: form.mentor.value,
+      expert: form.expert.value,
+      administrator: form.administrator.value
+    };
+
+    callServer('saveCalendarEvent', [data])
+      .then(function() {
+        Swal.fire('สำเร็จ!', 'บันทึกปฏิทินเรียบร้อยแล้ว', 'success');
+        form.reset();
+        if (calendarInstance) {
+          calendarInstance.refetchEvents();
+          // เด้งไปแสดงเดือนของวันที่เพิ่งบันทึก เผื่อเป็นคนละเดือนกับที่ปฏิทินกำลังแสดงอยู่
+          // (สาเหตุที่พบบ่อยที่สุดของ "บันทึกแล้วแต่ไม่เห็นในปฏิทิน" คือหน้าจอยังค้างอยู่เดือนเดิม)
+          if (data.eventDate) calendarInstance.gotoDate(data.eventDate);
+        }
+      })
+      .catch(function(error) {
+        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+      });
+  }
+
+  // ===== ตอนที่ 3: ค้นหาและแสดงผลรายบุคคล =====
+  function searchTeacher() {
+    const query = document.getElementById('teacherSearchInput').value;
+    document.getElementById('visitGroupsArea').innerHTML = '';
+    callServer('searchTeacherReport', [query])
+      .then(function(results) {
+        renderTeacherSearchResults(results || []);
+      })
+      .catch(function(error) {
+        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+      });
+  }
+
+  function renderTeacherSearchResults(results) {
+    const container = document.getElementById('teacherSearchResults');
+    if (results.length === 0) {
+      container.innerHTML = '<div class="text-muted">ไม่พบข้อมูล</div>';
+      return;
+    }
+    let html = '<table class="table table-hover align-middle"><thead class="table-light"><tr><th>ชื่อผู้สอน</th><th>กลุ่มสาระฯ</th><th>รายวิชา</th><th class="text-center">จำนวนครั้งที่ประเมิน</th><th></th></tr></thead><tbody>';
+    results.forEach(r => {
+      html += `<tr>
+        <td>${r.teacherName}</td>
+        <td>${r.department || ''}</td>
+        <td>${r.subject || ''}</td>
+        <td class="text-center">${r.count}</td>
+        <td class="text-center"><button class="btn btn-sm btn-submit-red" onclick="viewTeacherDetail('${String(r.teacherName).replace(/'/g, "\\'")}')">ดูรายละเอียด</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  function viewTeacherDetail(teacherName) {
+    callServer('getVisitGroups', [teacherName])
+      .then(function(visits) {
+        renderVisitGroups(teacherName, visits || []);
+      })
+      .catch(function(error) {
+        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+      });
+  }
+
+  function renderVisitGroups(teacherName, visits) {
+    const area = document.getElementById('visitGroupsArea');
+    if (!area) return;
+    if (visits.length === 0) {
+      area.innerHTML = '<div class="text-muted">ไม่พบรายการนิเทศของ ' + escapeHtml(teacherName) + ' ในระบบ</div>';
+      return;
+    }
+
+    window._visitGroupsCache = visits;
+
+    let html = '<h6 class="fw-bold text-dark mb-1">รายการนิเทศของ ' + escapeHtml(teacherName) + '</h6>';
+    html += '<div class="text-muted mb-3" style="font-size:13px;"><i class="fa-solid fa-file-pdf me-1"></i> พิมพ์แบบนิเทศเปิดชั้นเรียน</div>';
+    html += '<table class="table table-bordered align-middle" style="font-size: 13px;"><thead class="table-light"><tr>' +
+      '<th>วันที่</th><th>รายวิชา</th><th>คาบที่</th><th class="text-center">ผู้ร่วมนิเทศประเมินแล้ว</th><th class="text-center">พิมพ์</th></tr></thead><tbody>';
+    visits.forEach((v, idx) => {
+      html += `<tr>
+        <td>${v.date || ''}</td>
+        <td>${v.subject || ''}</td>
+        <td>${v.period || ''}</td>
+        <td class="text-center">${v.evaluatorCount} / 5 คน</td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-submit-red" onclick="printClassVisitPDF(${idx})">
+            <i class="fa-solid fa-file-pdf me-1"></i> ดาน์วโหลด PDF
+          </button>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    area.innerHTML = html;
+  }
+
+  function printClassVisitPDF(idx) {
+    const v = (window._visitGroupsCache || [])[idx];
+    if (!v) return;
+
+    Swal.fire({
+      title: 'กำลังสร้างแบบนิเทศ PDF',
+      text: 'กรุณารอสักครู่...',
+      allowOutsideClick: false,
+      didOpen: () => { Swal.showLoading(); }
+    });
+
+    callServer('generateClassVisitPDFReport', [v.teacherName, v.date, v.subject, v.period])
+      .then(function(response) {
+        Swal.close();
+        if (response && response.url) {
+          window.open(response.url, '_blank');
+        } else {
+          Swal.fire('สำเร็จ', 'สร้างรายงานเรียบร้อยแล้ว', 'success');
+        }
+      })
+      .catch(function(error) {
+        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+      });
+  }
+
+  // ===== ตอนที่ 4: แดชบอร์ด =====
+  function loadDashboardData() {
+    callServer('getDashboardData', [])
+      .then(function(dashboard) {
+        renderDashboard(dashboard);
+      })
+      .catch(function(error) {
+        Swal.fire('เกิดข้อผิดพลาด', 'โหลดข้อมูลแดชบอร์ดไม่สำเร็จ: ' + error.message, 'error');
+      });
+  }
+
+  function renderDashboard(dashboard) {
+    document.getElementById('kpiTeachers').innerHTML = `${dashboard.teacherCount} <span class="fs-6 text-muted">คน</span>`;
+    document.getElementById('kpiAvg').innerHTML = `${dashboard.avgSchool} <span class="fs-6 text-muted">/ 125</span>`;
+    document.getElementById('kpiPercent').innerText = `${dashboard.percentSchool}%`;
+
+    dashboard.aspectPercents.forEach((p, idx) => {
+      const i = idx + 1;
+      const el = document.getElementById('scoreAspect' + i);
+      const bar = document.getElementById('barAspect' + i);
+      const avgEl = document.getElementById('avgAspect' + i);
+      if (el) el.innerText = p + '%';
+      if (bar) bar.style.width = p + '%';
+      if (avgEl && dashboard.aspectAverages) avgEl.innerText = dashboard.aspectAverages[idx] + ' / 25';
+    });
+
+    const lv = dashboard.levelCounts;
+    document.getElementById('countLevel5').innerText = lv.l5 + ' คน';
+    document.getElementById('countLevel4').innerText = lv.l4 + ' คน';
+    document.getElementById('countLevel3').innerText = lv.l3 + ' คน';
+    document.getElementById('countLevel2').innerText = lv.l2 + ' คน';
+    document.getElementById('countLevel1').innerText = lv.l1 + ' คน';
+
+    let tbodyHtml = '';
+    dashboard.deptData.forEach(item => {
+      tbodyHtml += `
+        <tr>
+          <td class="fw-bold">${item.name}</td>
+          <td class="text-center">${item.count}</td>
+          <td class="text-center fw-bold text-secondary">${Number(item.avg).toFixed(2)}</td>
+          <td class="text-center">
+            <span class="badge-box badge-box-maroon">${Number(item.percent).toFixed(2)}%</span>
+          </td>
+        </tr>
+      `;
+    });
+    document.getElementById('dashboardDeptSummary').innerHTML = tbodyHtml;
+
+    // 1. วาด Doughnut Chart
+    const canvasPie = document.getElementById('qualityPieChart');
+    if (canvasPie) {
+      const ctxPie = canvasPie.getContext('2d');
+      if (pieChartInstance) pieChartInstance.destroy();
+
+      pieChartInstance = new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+          labels: ['ยอดเยี่ยม', 'ดีมาก', 'ดี', 'พอใช้', 'ปรับปรุง'],
+          datasets: [{
+            data: [lv.l5, lv.l4, lv.l3, lv.l2, lv.l1],
+            backgroundColor: ['#198754', '#0d6efd', '#0dcaf0', '#ffc107', '#dc3545']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // 2. วาด Bar Chart
+    const canvasBar = document.getElementById('deptBarChart');
+    if (canvasBar) {
+      const ctxBar = canvasBar.getContext('2d');
+      if (barChartInstance) barChartInstance.destroy();
+
+      barChartInstance = new Chart(ctxBar, {
+        data: {
+          labels: dashboard.deptData.map(d => d.name),
+          datasets: [
+            {
+              type: 'bar',
+              label: 'ร้อยละ (%)',
+              data: dashboard.deptData.map(d => Number(d.percent)),
+              backgroundColor: '#611b22',
+              borderRadius: 4,
+              yAxisID: 'yPercent'
+            },
+            {
+              type: 'line',
+              label: 'ค่าเฉลี่ย (/125)',
+              data: dashboard.deptData.map(d => Number(d.avg)),
+              borderColor: '#514b4c',
+              backgroundColor: '#514b4c',
+              yAxisID: 'yAvg',
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { font: { size: 10 } } },
+            yPercent: { type: 'linear', position: 'left', beginAtZero: true, max: 100, title: { display: true, text: 'ร้อยละ (%)' } },
+            yAvg: { type: 'linear', position: 'right', beginAtZero: true, max: 125, grid: { drawOnChartArea: false }, title: { display: true, text: 'ค่าเฉลี่ย (/125)' } }
+          }
+        }
+      });
+    }
+  }
+
+  // ===== ตอนที่ 5: รายงาน =====
+  function loadDeptReportList() {
+    // ใช้รายชื่อกลุ่มสาระจากเซิร์ฟเวอร์ถ้าโหลดไว้แล้ว (จาก loadFormOptions ตอนเปิดหน้า) กันรายชื่อไม่ตรงกับ .gs
+    // ถ้ายังไม่ได้โหลด (เช่น เข้าแท็บ 5 เร็วมาก) ใช้รายการสำรองนี้แทนไปพลางๆ
+    const depts = (formOptionsCache && formOptionsCache.departments) || [
+      "ภาษาไทย", "คณิตศาสตร์", "วิทยาศาสตร์", "คอมพิวเตอร์",
+      "ภาษาต่างประเทศ", "สังคมศึกษา ศาสนาและวัฒนธรรม", "การงานอาชีพ", "สุขศึกษาและพลศึกษา",
+      "ศิลปะ", "งานแนะแนวและบรรณารักษ์"
+    ];
+    let html = '';
+    depts.forEach(d => {
+      html += `<tr><td class="fw-bold">${d}</td><td class="text-center">
+        <button class="btn btn-sm btn-submit-red" onclick="generateDeptReport('${String(d).replace(/'/g, "\\'")}')">
+          <i class="fa-solid fa-file-pdf me-1"></i> รายงานสรุป
+        </button>
+      </td></tr>`;
+    });
+    document.getElementById('deptReportTable').innerHTML = html;
+  }
+
+  function generateDeptReport(deptName) {
+    Swal.fire({
+      title: 'กำลังสร้างรายงาน',
+      text: 'กรุณารอสักครู่ ระบบกำลังประมวลผลข้อมูล...',
+      allowOutsideClick: false,
+      didOpen: () => { Swal.showLoading(); }
+    });
+
+    callServer('generateDepartmentPDFReport', [deptName])
+      .then(function(response) {
+        Swal.close();
+        if (response && response.url) {
+          window.open(response.url, '_blank');
+        } else {
+          Swal.fire('สำเร็จ', 'สร้างรายงานเรียบร้อยแล้ว', 'success');
+        }
+      })
+      .catch(function(error) {
+        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+      });
+  }
+
+  function generateSchoolReport() {
+    Swal.fire({
+      title: 'กำลังสร้างรายงานภาพรวมโรงเรียน',
+      text: 'กรุณารอสักครู่ ระบบกำลังประมวลผลข้อมูล...',
+      allowOutsideClick: false,
+      didOpen: () => { Swal.showLoading(); }
+    });
+
+    callServer('generateSchoolPDFReport', [])
+      .then(function(response) {
+        Swal.close();
+        if (response && response.url) {
+          window.open(response.url, '_blank');
+        } else {
+          Swal.fire('สำเร็จ', 'สร้างรายงานเรียบร้อยแล้ว', 'success');
+        }
+      })
+      .catch(function(error) {
+        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+      });
+  }
+</script>
+</body>
+</html>
