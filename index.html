@@ -281,8 +281,7 @@
       display: block;
       margin: 0 auto;
       border-radius: 8px;
-      background-color: #ffffff;
-      padding: 4px;
+      background-color: transparent;
     }
   </style>
 </head>
@@ -921,7 +920,7 @@
   // ===== ตั้งค่าการเชื่อมต่อ Google Apps Script Web App =====
   // ใส่ URL ของเว็บแอปที่ deploy แล้ว (Apps Script Editor > Deploy > Manage deployments)
   // ต้องลงท้ายด้วย /exec เท่านั้น (ห้ามใช้ URL แบบ /dev เพราะใช้ได้เฉพาะบัญชีที่ล็อกอินแก้โค้ดอยู่)
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzLeEdeCko57R6vgpbyIIC5dxYmSlea7N3nDfLSXBYOeLS8LTj-iWvYE3tSAYTOWF2nAA/exec";
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwygOAVADgnpI00kbkxWDwR6E4dopij7zylOuF6nzidy5-3jcCIFexB4AssPWtqZ6hr1g/exec";
 
   /**
    * เรียกฟังก์ชันฝั่งเซิร์ฟเวอร์ (Code.gs) ผ่าน API แทน google.script.run
@@ -952,6 +951,56 @@
         }
         return json.data;
       });
+  }
+
+  /**
+   * ดาวน์โหลดไฟล์ (เช่น PDF) ที่เซิร์ฟเวอร์ส่งมาเป็นข้อความ base64 ลงเครื่องผู้ใช้โดยตรง "ทันที"
+   * - ไม่เปิดแท็บ/หน้าต่างใหม่ (จึงไม่โดนเบราว์เซอร์บล็อกป็อปอัป)
+   * - ไม่ต้องผ่านหรือฝากไฟล์ไว้ที่ Google Drive เลย เพราะแปลง base64 -> Blob แล้วสั่งดาวน์โหลดในเครื่องฝั่งผู้ใช้ทั้งหมด
+   * ต้องใช้คู่กับฝั่งเซิร์ฟเวอร์ (Code.gs) ที่ return { fileName, base64, mimeType } แทนการสร้างไฟล์ใน Drive แล้ว return { url }
+   */
+  function downloadBase64File(base64Data, fileName, mimeType) {
+    const byteChars = atob(base64Data);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) {
+      byteNumbers[i] = byteChars.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType || 'application/pdf' });
+
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName || 'download.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  }
+
+  /**
+   * จุดจัดการผลลัพธ์รายงาน PDF แบบรวมศูนย์ ใช้ร่วมกันทั้ง 3 ฟังก์ชันสร้างรายงาน (นิเทศรายคาบ / รายกลุ่มสาระ / ภาพรวมโรงเรียน)
+   * - response.base64 มา -> ดาวน์โหลดลงเครื่องผู้ใช้ทันที (วิธีใหม่ ไม่ผ่าน Google Drive)
+   * - response.url มา (รูปแบบเดิม/กรณียังไม่ได้อัปเดตฝั่งเซิร์ฟเวอร์) -> เปิดแท็บใหม่ไปยังลิงก์นั้นเหมือนเดิม เพื่อไม่ให้ระบบพัง
+   */
+  function handleReportResponse(response, fallbackFileName) {
+    Swal.close();
+    if (response && response.base64) {
+      downloadBase64File(response.base64, response.fileName || fallbackFileName, response.mimeType);
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'ดาวน์โหลดไฟล์ลงเครื่องเรียบร้อยแล้ว',
+        showConfirmButton: false,
+        timer: 2200,
+        timerProgressBar: true
+      });
+    } else if (response && response.url) {
+      window.open(response.url, '_blank');
+    } else {
+      Swal.fire('สำเร็จ', 'สร้างรายงานเรียบร้อยแล้ว', 'success');
+    }
   }
 
   const sections = [
@@ -1700,7 +1749,7 @@
         <td class="text-center">${v.evaluatorCount} / 5 คน</td>
         <td class="text-center">
           <button class="btn btn-sm btn-submit-red" onclick="printClassVisitPDF(${idx})">
-            <i class="fa-solid fa-file-pdf me-1"></i> ดาน์วโหลด PDF
+            <i class="fa-solid fa-file-pdf me-1"></i> ดาวน์โหลด PDF
           </button>
         </td>
       </tr>`;
@@ -1722,12 +1771,7 @@
 
     callServer('generateClassVisitPDFReport', [v.teacherName, v.date, v.subject, v.period])
       .then(function(response) {
-        Swal.close();
-        if (response && response.url) {
-          window.open(response.url, '_blank');
-        } else {
-          Swal.fire('สำเร็จ', 'สร้างรายงานเรียบร้อยแล้ว', 'success');
-        }
+        handleReportResponse(response, 'แบบนิเทศ_' + v.teacherName + '_' + v.date + '.pdf');
       })
       .catch(function(error) {
         Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
@@ -1877,12 +1921,7 @@
 
     callServer('generateDepartmentPDFReport', [deptName])
       .then(function(response) {
-        Swal.close();
-        if (response && response.url) {
-          window.open(response.url, '_blank');
-        } else {
-          Swal.fire('สำเร็จ', 'สร้างรายงานเรียบร้อยแล้ว', 'success');
-        }
+        handleReportResponse(response, 'รายงานสรุป_' + deptName + '.pdf');
       })
       .catch(function(error) {
         Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
@@ -1899,12 +1938,7 @@
 
     callServer('generateSchoolPDFReport', [])
       .then(function(response) {
-        Swal.close();
-        if (response && response.url) {
-          window.open(response.url, '_blank');
-        } else {
-          Swal.fire('สำเร็จ', 'สร้างรายงานเรียบร้อยแล้ว', 'success');
-        }
+        handleReportResponse(response, 'รายงานภาพรวมโรงเรียน.pdf');
       })
       .catch(function(error) {
         Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
