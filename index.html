@@ -412,7 +412,7 @@
               <div class="alert alert-warning border-warning d-flex align-items-center mb-4" role="alert">
                 <i class="fa-solid fa-circle-exclamation fs-4 me-3 text-warning"></i>
                 <div style="font-size: 14px;">
-                  <strong>หมายเหตุ:</strong> ระบบยึดให้<strong>เฉพาะผู้ร่วมนิเทศ "คนที่ 1"</strong> เท่านั้นที่แนบรูปภาพได้ (กำหนดที่ "ลำดับคนที่" ในตอนที่ 5 ด้านล่าง) เพื่อไม่ให้เกิดความทับซ้อนของรูปภาพในระบบ
+                  <strong>หมายเหตุ:</strong> การแนบรูปภาพให้ตัวแทนผู้ร่วมนิเทศในทีมนิเทศการสอนเป็นผู้แนบรูปภาพ<strong>เพียง 1 คนเท่านั้น</strong> เพื่อป้องกันรูปภาพซ้ำซ้อนในระบบ
                 </div>
               </div>
 
@@ -599,37 +599,6 @@
                   <div class="col-12">
                     <label class="form-label">วันที่</label>
                     <input type="date" name="eventDate" class="form-control" required>
-                  </div>
-
-                  <div class="col-12"><hr class="my-2"></div>
-                  <div class="col-12"><label class="form-label fw-bold text-danger m-0">ข้อมูลทีม PLC</label></div>
-                  <div class="col-12">
-                    <label class="form-label">ชื่อทีม PLC</label>
-                    <input type="text" name="plcTeamName" class="form-control" placeholder="ระบุชื่อทีม PLC">
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label">ชื่อ-สกุล Model Teacher</label>
-                    <input type="text" name="modelTeacher" class="form-control">
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label">ชื่อ-สกุล Buddy Teacher (คนที่ 1)</label>
-                    <input type="text" name="buddyTeacher1" class="form-control">
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label">ชื่อ-สกุล Buddy Teacher (คนที่ 2)</label>
-                    <input type="text" name="buddyTeacher2" class="form-control">
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label">ชื่อ-สกุล Mentor</label>
-                    <input type="text" name="mentor" class="form-control">
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label">ชื่อ-สกุล Expert</label>
-                    <input type="text" name="expert" class="form-control">
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label">ชื่อ-สกุล Administrator</label>
-                    <input type="text" name="administrator" class="form-control">
                   </div>
 
                   <div class="col-12 text-center mt-3">
@@ -920,7 +889,7 @@
   // ===== ตั้งค่าการเชื่อมต่อ Google Apps Script Web App =====
   // ใส่ URL ของเว็บแอปที่ deploy แล้ว (Apps Script Editor > Deploy > Manage deployments)
   // ต้องลงท้ายด้วย /exec เท่านั้น (ห้ามใช้ URL แบบ /dev เพราะใช้ได้เฉพาะบัญชีที่ล็อกอินแก้โค้ดอยู่)
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwygOAVADgnpI00kbkxWDwR6E4dopij7zylOuF6nzidy5-3jcCIFexB4AssPWtqZ6hr1g/exec";
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxkgXS4j444-KKfKNQG9_PW-phgiwA-AskB_nquzVyhjRETWZn74gIWRU569zBssU9hXg/exec";
 
   /**
    * เรียกฟังก์ชันฝั่งเซิร์ฟเวอร์ (Code.gs) ผ่าน API แทน google.script.run
@@ -1526,13 +1495,6 @@
           '<p class="mb-1"><strong>ผู้สอน:</strong> ' + escapeHtml(p.teacherName || '-') + (p.position ? ' (' + escapeHtml(p.position) + ')' : '') + '</p>' +
           '<p class="mb-1"><strong>วิชา:</strong> ' + escapeHtml(p.subject || '-') + (p.code ? ' (' + escapeHtml(p.code) + ')' : '') + ' ม.' + escapeHtml(p.grade || '-') + '/' + escapeHtml(p.room || '-') + ' คาบ ' + escapeHtml(p.period || '-') + '</p>' +
           (p.unit || p.lesson ? '<p class="mb-1"><strong>หน่วย/เรื่อง:</strong> ' + escapeHtml(p.unit || '-') + ' / ' + escapeHtml(p.lesson || '-') + '</p>' : '') +
-          '<hr class="my-2">' +
-          '<p class="mb-1"><strong>ทีม PLC:</strong> ' + escapeHtml(p.plcTeamName || '-') + '</p>' +
-          '<p class="mb-1"><strong>Model Teacher:</strong> ' + escapeHtml(p.modelTeacher || '-') + '</p>' +
-          '<p class="mb-1"><strong>Buddy Teacher:</strong> ' + escapeHtml(p.buddyTeacher1 || '-') + ' , ' + escapeHtml(p.buddyTeacher2 || '-') + '</p>' +
-          '<p class="mb-1"><strong>Mentor:</strong> ' + escapeHtml(p.mentor || '-') + '</p>' +
-          '<p class="mb-1"><strong>Expert:</strong> ' + escapeHtml(p.expert || '-') + '</p>' +
-          '<p class="mb-1"><strong>Administrator:</strong> ' + escapeHtml(p.administrator || '-') + '</p>' +
           '</div>';
         Swal.fire({ title: info.event.title, html: html, confirmButtonText: 'ปิด' });
       }
@@ -1658,14 +1620,7 @@
       period: form.period.value,
       eventDate: form.eventDate.value,
       eventTimeStart: form.eventTimeStart.value,
-      eventTimeEnd: form.eventTimeEnd.value,
-      plcTeamName: form.plcTeamName.value,
-      modelTeacher: form.modelTeacher.value,
-      buddyTeacher1: form.buddyTeacher1.value,
-      buddyTeacher2: form.buddyTeacher2.value,
-      mentor: form.mentor.value,
-      expert: form.expert.value,
-      administrator: form.administrator.value
+      eventTimeEnd: form.eventTimeEnd.value
     };
 
     callServer('saveCalendarEvent', [data])
