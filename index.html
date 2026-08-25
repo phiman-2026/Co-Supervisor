@@ -425,7 +425,7 @@
                 <div class="col-md-6">
                   <label class="form-label fw-bold">รูปภาพที่ 1</label>
                   <div class="input-group">
-                    <input type="file" id="fileInput1" class="form-control" accept="image/*" capture="environment" onchange="previewImage(this, 'imgPreview1', 'imgPlaceholder1')">
+                    <input type="file" id="fileInput1" class="form-control" accept="image/*" onchange="previewImage(this, 'imgPreview1', 'imgPlaceholder1')">
                     <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput1').click();">
                       <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
                     </button>
@@ -436,7 +436,7 @@
                 <div class="col-md-6">
                   <label class="form-label fw-bold">รูปภาพที่ 2</label>
                   <div class="input-group">
-                    <input type="file" id="fileInput2" class="form-control" accept="image/*" capture="environment" onchange="previewImage(this, 'imgPreview2', 'imgPlaceholder2')">
+                    <input type="file" id="fileInput2" class="form-control" accept="image/*" onchange="previewImage(this, 'imgPreview2', 'imgPlaceholder2')">
                     <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput2').click();">
                       <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
                     </button>
@@ -447,7 +447,7 @@
                 <div class="col-md-6">
                   <label class="form-label fw-bold">รูปภาพที่ 3</label>
                   <div class="input-group">
-                    <input type="file" id="fileInput3" class="form-control" accept="image/*" capture="environment" onchange="previewImage(this, 'imgPreview3', 'imgPlaceholder3')">
+                    <input type="file" id="fileInput3" class="form-control" accept="image/*" onchange="previewImage(this, 'imgPreview3', 'imgPlaceholder3')">
                     <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput3').click();">
                       <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
                     </button>
@@ -458,7 +458,7 @@
                 <div class="col-md-6">
                   <label class="form-label fw-bold">รูปภาพที่ 4</label>
                   <div class="input-group">
-                    <input type="file" id="fileInput4" class="form-control" accept="image/*" capture="environment" onchange="previewImage(this, 'imgPreview4', 'imgPlaceholder4')">
+                    <input type="file" id="fileInput4" class="form-control" accept="image/*" onchange="previewImage(this, 'imgPreview4', 'imgPlaceholder4')">
                     <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput4').click();">
                       <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
                     </button>
@@ -889,7 +889,7 @@
   // ===== ตั้งค่าการเชื่อมต่อ Google Apps Script Web App =====
   // ใส่ URL ของเว็บแอปที่ deploy แล้ว (Apps Script Editor > Deploy > Manage deployments)
   // ต้องลงท้ายด้วย /exec เท่านั้น (ห้ามใช้ URL แบบ /dev เพราะใช้ได้เฉพาะบัญชีที่ล็อกอินแก้โค้ดอยู่)
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxkgXS4j444-KKfKNQG9_PW-phgiwA-AskB_nquzVyhjRETWZn74gIWRU569zBssU9hXg/exec";
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbweFKwj-WIKgn4RFYkc7ymcO608k8dV_xLHothUV5YMpUw26cysO_Df4x1l4_INTZgVgw/exec";
 
   /**
    * เรียกฟังก์ชันฝั่งเซิร์ฟเวอร์ (Code.gs) ผ่าน API แทน google.script.run
