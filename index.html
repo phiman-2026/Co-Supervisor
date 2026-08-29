@@ -10,14 +10,16 @@
   <!-- FontAwesome Icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <!-- Google Fonts: Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
 
-  <!-- Chart.js Library -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chart.js Library (deferred: only needed once the "แดชบอร์ด" tab opens) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <!-- SweetAlert2 (ใช้ใน submitEvaluationForm / generateSchoolReport แต่ไฟล์เดิมไม่ได้โหลดไว้) -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 
   <style>
     :root {
@@ -75,6 +77,37 @@
     .sidebar .nav-link:hover, .sidebar .nav-link.active {
       background-color: var(--primary-maroon);
       box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    .sidebar .nav {
+      flex-direction: column;
+    }
+
+    /* Below the Bootstrap "md" breakpoint the sidebar stacks above the main
+       content column. Without this override, a 100vh-tall sidebar means
+       phone/tablet users must scroll a full screen before reaching any tab
+       content. The nav becomes a compact, horizontally-scrollable bar instead. */
+    @media (max-width: 767.98px) {
+      .sidebar {
+        min-height: auto;
+      }
+      .sidebar-brand {
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      .sidebar .nav {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        padding-bottom: 4px;
+      }
+      .sidebar .nav-link {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        margin-bottom: 0;
+      }
     }
 
     /* Header Banner */
@@ -172,7 +205,10 @@
       z-index: 1050;
     }
     .combo-item {
-      padding: 8px 12px;
+      padding: 10px 12px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
       font-size: 14px;
       cursor: pointer;
     }
@@ -225,9 +261,25 @@
       overflow: hidden;
       flex-shrink: 0;
     }
-    .rating-box input[type="radio"] { display: none; }
+    /* Visually hidden (NOT display:none) so the radio stays in the tab order and
+       the accessibility tree -- with display:none, keyboard/screen-reader users
+       could not answer any of the 25 evaluation questions at all. */
+    .rating-box input[type="radio"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
     .rating-box label {
-      padding: 6px 16px;
+      padding: 12px 16px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
       font-size: 14px;
       font-weight: 600;
       color: #dc3545;
@@ -240,6 +292,10 @@
     .rating-box input[type="radio"]:checked + label {
       background-color: #dc3545;
       color: #ffffff;
+    }
+    .rating-box input[type="radio"]:focus-visible + label {
+      outline: 3px solid #0d6efd;
+      outline-offset: -3px;
     }
 
     /* Buttons & Pad */
@@ -283,9 +339,24 @@
       border-radius: 8px;
       background-color: transparent;
     }
+
+    /* Momentary highlight drawing the eye to a field/question that failed validation */
+    .field-highlight {
+      animation: fieldHighlightPulse 2.5s ease;
+      border-radius: 8px;
+    }
+    @keyframes fieldHighlightPulse {
+      0% { box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.6); }
+      70% { box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.6); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .field-highlight { animation: none; box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.6); }
+    }
   </style>
 </head>
 <body>
+<h1 class="visually-hidden">ระบบแบบประเมินนิเทศครูเป็นรายบุคคล โรงเรียนพิมานพิทยาสรรค์</h1>
 
 <div class="container-fluid">
   <div class="row">
@@ -296,26 +367,26 @@
              ตั้งค่าแชร์เป็น "ทุกคนที่มีลิงก์ - ดูได้" แล้วคัดลอกลิงก์มาใส่) ถ้าไม่ตั้งค่า จะแสดงไอคอนแทน -->
         <img id="schoolLogoImg" src="" alt="ตราโรงเรียนพิมานพิทยาสรรค์" class="school-logo d-none"
              onerror="this.classList.add('d-none'); document.getElementById('schoolLogoFallback').classList.remove('d-none');">
-        <i id="schoolLogoFallback" class="fa-solid fa-school text-white"></i>
+        <i id="schoolLogoFallback" aria-hidden="true" class="fa-solid fa-school text-white"></i>
         <h6 class="fw-bold m-0 mt-1">งานนิเทศการศึกษา</h6>
         <small class="text-white-50" style="font-size: 11px;">โรงเรียนพิมานพิทยาสรรค์</small>
       </div>
 
-      <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
-        <button class="nav-link active" onclick="switchTab('tab1', this)">
-          <i class="fa-solid fa-clipboard-check"></i> 1. ประเมินนิเทศครู (Co-Supervisor)
+      <div class="nav nav-pills" id="v-pills-tab" role="tablist">
+        <button class="nav-link active" id="tabBtn1" role="tab" aria-selected="true" aria-controls="tab1" onclick="switchTab('tab1', this)">
+          <i aria-hidden="true" class="fa-solid fa-clipboard-check"></i> 1. ประเมินนิเทศครู (Co-Supervisor)
         </button>
-        <button class="nav-link" onclick="switchTab('tab2', this)">
-          <i class="fa-solid fa-calendar-days"></i> 2. ปฏิทินการเปิดชั้นเรียน
+        <button class="nav-link" id="tabBtn2" role="tab" aria-selected="false" aria-controls="tab2" onclick="switchTab('tab2', this)">
+          <i aria-hidden="true" class="fa-solid fa-calendar-days"></i> 2. ปฏิทินการเปิดชั้นเรียน
         </button>
-        <button class="nav-link" onclick="switchTab('tab3', this)">
-          <i class="fa-solid fa-user-check"></i> 3. ผลประเมินรายบุคคล
+        <button class="nav-link" id="tabBtn3" role="tab" aria-selected="false" aria-controls="tab3" onclick="switchTab('tab3', this)">
+          <i aria-hidden="true" class="fa-solid fa-user-check"></i> 3. ผลประเมินรายบุคคล
         </button>
-        <button class="nav-link" onclick="switchTab('tab4', this)">
-          <i class="fa-solid fa-chart-pie"></i> 4. แดชบอร์ดภาพรวม
+        <button class="nav-link" id="tabBtn4" role="tab" aria-selected="false" aria-controls="tab4" onclick="switchTab('tab4', this)">
+          <i aria-hidden="true" class="fa-solid fa-chart-pie"></i> 4. แดชบอร์ดภาพรวม
         </button>
-        <button class="nav-link" onclick="switchTab('tab5', this)">
-          <i class="fa-solid fa-file-invoice"></i> 5. รายงานผลงานนิเทศการศึกษา
+        <button class="nav-link" id="tabBtn5" role="tab" aria-selected="false" aria-controls="tab5" onclick="switchTab('tab5', this)">
+          <i aria-hidden="true" class="fa-solid fa-file-invoice"></i> 5. รายงานผลงานนิเทศการศึกษา
         </button>
       </div>
     </div>
@@ -323,19 +394,19 @@
     <!-- Main Content Area -->
     <div class="col-md-9 col-lg-10 p-4">
       <div class="header-banner">
-        <h4 class="fw-bold mb-2"><i class="fa-solid fa-chalkboard-user me-2"></i>ระบบแบบประเมินนิเทศครูเป็นรายบุคคลโดยใช้กระบวนการขับเคลื่อนการจัดกิจกรรมการเรียนรู้ของผู้ร่วมนิเทศ (Co-Supervisor)</h4>
+        <h4 class="fw-bold mb-2"><i aria-hidden="true" class="fa-solid fa-chalkboard-user me-2"></i>ระบบแบบประเมินนิเทศครูเป็นรายบุคคลโดยใช้กระบวนการขับเคลื่อนการจัดกิจกรรมการเรียนรู้ของผู้ร่วมนิเทศ (Co-Supervisor)</h4>
         <p class="m-0 fs-6 text-white-50">ภาคเรียนที่ 1 ปีการศึกษา 2569 | งานนิเทศการศึกษา โรงเรียนพิมานพิทยาสรรค์ จังหวัดสตูล</p>
       </div>
 
       <!-- TAB 1: แบบประเมิน -->
-      <div id="tab1" class="tab-content-item">
+      <div id="tab1" class="tab-content-item" role="tabpanel" aria-labelledby="tabBtn1">
         <form id="evalForm" onsubmit="event.preventDefault(); submitEvaluationForm();">
           <div class="card card-section">
-            <div class="card-header card-header-custom"><i class="fa-solid fa-user-gear"></i> ตอนที่ 1 ข้อมูลครูผู้รับการนิเทศ</div>
+            <div class="card-header card-header-custom"><i aria-hidden="true" class="fa-solid fa-user-gear"></i> ตอนที่ 1 ข้อมูลครูผู้รับการนิเทศ</div>
             <div class="card-body p-4">
 
               <div class="alert alert-secondary d-flex align-items-start mb-3" style="font-size: 13px;">
-                <i class="fa-solid fa-circle-info me-2 mt-1"></i>
+                <i aria-hidden="true" class="fa-solid fa-circle-info me-2 mt-1"></i>
                 <div><strong>แนะนำ:</strong> เลือก "รายการนิเทศจากปฏิทิน" ก่อน เพื่อดึงข้อมูลตอนที่ 1 ให้ตรงกันทุกท่านที่ร่วมนิเทศ (ป้องกันข้อมูลไม่ตรงกันระหว่างผู้ร่วมนิเทศคนที่ 1-5 และปัญหาข้อมูลทับซ้อนตอนแปลง PDF)</div>
               </div>
 
@@ -391,14 +462,14 @@
           </div>
 
           <div class="card card-section">
-            <div class="card-header card-header-custom"><i class="fa-solid fa-list-check"></i> ตอนที่ 2 รายการประเมินนิเทศครูเป็นรายบุคคล (25 ข้อ)</div>
+            <div class="card-header card-header-custom"><i aria-hidden="true" class="fa-solid fa-list-check"></i> ตอนที่ 2 รายการประเมินนิเทศครูเป็นรายบุคคล (25 ข้อ)</div>
             <div class="card-body p-4">
               <div id="questionsContainer"></div>
             </div>
           </div>
 
           <div class="card card-section">
-            <div class="card-header card-header-custom"><i class="fa-solid fa-comment-dots"></i> ตอนที่ 3 ข้อเสนอแนะเพิ่มเติม</div>
+            <div class="card-header card-header-custom"><i aria-hidden="true" class="fa-solid fa-comment-dots"></i> ตอนที่ 3 ข้อเสนอแนะเพิ่มเติม</div>
             <div class="card-body p-4">
               <textarea name="suggestions" class="form-control" rows="3" placeholder="พิมพ์ข้อเสนอแนะ..."></textarea>
             </div>
@@ -406,18 +477,18 @@
 
           <div class="card card-section">
             <div class="card-header card-header-custom">
-              <i class="fa-solid fa-image"></i> ตอนที่ 4 ภาพการจัดกิจกรรมการเรียนรู้ / การนิเทศ (4 ภาพ)
+              <i aria-hidden="true" class="fa-solid fa-image"></i> ตอนที่ 4 ภาพการจัดกิจกรรมการเรียนรู้ / การนิเทศ (4 ภาพ)
             </div>
             <div class="card-body p-4">
               <div class="alert alert-warning border-warning d-flex align-items-center mb-4" role="alert">
-                <i class="fa-solid fa-circle-exclamation fs-4 me-3 text-warning"></i>
+                <i aria-hidden="true" class="fa-solid fa-circle-exclamation fs-4 me-3 text-warning"></i>
                 <div style="font-size: 14px;">
                   <strong>หมายเหตุ:</strong> การแนบรูปภาพให้ตัวแทนผู้ร่วมนิเทศในทีมนิเทศการสอนเป็นผู้แนบรูปภาพ<strong>เพียง 1 คนเท่านั้น</strong> เพื่อป้องกันรูปภาพซ้ำซ้อนในระบบ
                 </div>
               </div>
 
               <div id="photoNonPrimaryNotice" class="alert alert-secondary d-none" style="font-size: 14px;">
-                <i class="fa-solid fa-circle-info me-2"></i>
+                <i aria-hidden="true" class="fa-solid fa-circle-info me-2"></i>
                 ท่านเลือก "ลำดับคนที่" ไม่ใช่คนที่ 1 ในตอนที่ 5 ระบบจึงซ่อนช่องแนบภาพไว้ (ให้ผู้ร่วมนิเทศคนที่ 1 เป็นผู้แนบภาพแทน)
               </div>
 
@@ -427,10 +498,10 @@
                   <div class="input-group">
                     <input type="file" id="fileInput1" class="form-control" accept="image/*" onchange="previewImage(this, 'imgPreview1', 'imgPlaceholder1')">
                     <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput1').click();">
-                      <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
+                      <i aria-hidden="true" class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
                     </button>
                   </div>
-                  <div class="img-preview-box"><span id="imgPlaceholder1" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview1" src="#" class="d-none"></div>
+                  <div class="img-preview-box"><span id="imgPlaceholder1" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview1" src="#" class="d-none" alt="ตัวอย่างรูปภาพที่ 1"></div>
                 </div>
 
                 <div class="col-md-6">
@@ -438,10 +509,10 @@
                   <div class="input-group">
                     <input type="file" id="fileInput2" class="form-control" accept="image/*" onchange="previewImage(this, 'imgPreview2', 'imgPlaceholder2')">
                     <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput2').click();">
-                      <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
+                      <i aria-hidden="true" class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
                     </button>
                   </div>
-                  <div class="img-preview-box"><span id="imgPlaceholder2" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview2" src="#" class="d-none"></div>
+                  <div class="img-preview-box"><span id="imgPlaceholder2" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview2" src="#" class="d-none" alt="ตัวอย่างรูปภาพที่ 2"></div>
                 </div>
 
                 <div class="col-md-6">
@@ -449,10 +520,10 @@
                   <div class="input-group">
                     <input type="file" id="fileInput3" class="form-control" accept="image/*" onchange="previewImage(this, 'imgPreview3', 'imgPlaceholder3')">
                     <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput3').click();">
-                      <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
+                      <i aria-hidden="true" class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
                     </button>
                   </div>
-                  <div class="img-preview-box"><span id="imgPlaceholder3" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview3" src="#" class="d-none"></div>
+                  <div class="img-preview-box"><span id="imgPlaceholder3" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview3" src="#" class="d-none" alt="ตัวอย่างรูปภาพที่ 3"></div>
                 </div>
 
                 <div class="col-md-6">
@@ -460,24 +531,24 @@
                   <div class="input-group">
                     <input type="file" id="fileInput4" class="form-control" accept="image/*" onchange="previewImage(this, 'imgPreview4', 'imgPlaceholder4')">
                     <button class="btn btn-outline-danger" type="button" onclick="document.getElementById('fileInput4').click();">
-                      <i class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
+                      <i aria-hidden="true" class="fa-solid fa-camera me-1"></i> ถ่ายรูป/เลือกรูป
                     </button>
                   </div>
-                  <div class="img-preview-box"><span id="imgPlaceholder4" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview4" src="#" class="d-none"></div>
+                  <div class="img-preview-box"><span id="imgPlaceholder4" class="text-muted">ยังไม่ได้เลือกไฟล์</span><img id="imgPreview4" src="#" class="d-none" alt="ตัวอย่างรูปภาพที่ 4"></div>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="card card-section">
-            <div class="card-header card-header-custom"><i class="fa-solid fa-pen-nib"></i> ตอนที่ 5 ข้อมูลครูผู้ร่วมนิเทศ</div>
+            <div class="card-header card-header-custom"><i aria-hidden="true" class="fa-solid fa-pen-nib"></i> ตอนที่ 5 ข้อมูลครูผู้ร่วมนิเทศ</div>
             <div class="card-body p-4">
               <div class="row g-3 mb-3">
                 <div class="col-md-4">
                   <label class="form-label">ชื่อครูผู้ร่วมนิเทศ</label>
                   <div class="combo-wrap">
                     <input type="text" name="evaluatorName" id="evaluatorNameInput" class="form-control" placeholder="พิมพ์เพื่อค้นหา หรือระบุชื่อ" autocomplete="off" required>
-                    <i class="fa-solid fa-magnifying-glass combo-icon"></i>
+                    <i aria-hidden="true" class="fa-solid fa-magnifying-glass combo-icon"></i>
                     <div id="evaluatorNameList" class="combo-panel d-none"></div>
                   </div>
                 </div>
@@ -498,24 +569,24 @@
           </div>
 
           <div class="text-center my-4">
-            <button type="button" class="btn btn-submit-red" onclick="submitEvaluationForm()"><i class="fa-solid fa-paper-plane me-2"></i>บันทึกข้อมูลการประเมิน</button>
+            <button type="button" class="btn btn-submit-red" onclick="submitEvaluationForm()"><i aria-hidden="true" class="fa-solid fa-paper-plane me-2"></i>บันทึกข้อมูลการประเมิน</button>
           </div>
         </form>
       </div>
 
       <!-- TAB 2: ปฏิทิน -->
-      <div id="tab2" class="tab-content-item d-none">
+      <div id="tab2" class="tab-content-item d-none" role="tabpanel" aria-labelledby="tabBtn2">
         <div class="row g-4">
           <div class="col-md-4">
             <div class="card card-section">
-              <div class="card-header card-header-custom"><i class="fa-solid fa-calendar-plus"></i> ลงทะเบียนปฏิทิน</div>
+              <div class="card-header card-header-custom"><i aria-hidden="true" class="fa-solid fa-calendar-plus"></i> ลงทะเบียนปฏิทิน</div>
               <div class="card-body p-3">
                 <form id="calForm" class="row g-3" onsubmit="event.preventDefault(); submitCalendarForm();">
                   <div class="col-12">
                     <label class="form-label">ชื่อผู้สอน</label>
                     <div class="combo-wrap">
                       <input type="text" name="teacherName" id="calTeacherNameInput" class="form-control" placeholder="พิมพ์เพื่อค้นหา หรือระบุชื่อผู้สอน" autocomplete="off" required>
-                      <i class="fa-solid fa-magnifying-glass combo-icon"></i>
+                      <i aria-hidden="true" class="fa-solid fa-magnifying-glass combo-icon"></i>
                       <div id="calTeacherNameList" class="combo-panel d-none"></div>
                     </div>
                   </div>
@@ -602,7 +673,7 @@
                   </div>
 
                   <div class="col-12 text-center mt-3">
-                    <button type="submit" class="btn btn-submit-red w-100"><i class="fa-solid fa-calendar-check me-2"></i>บันทึก</button>
+                    <button type="submit" class="btn btn-submit-red w-100"><i aria-hidden="true" class="fa-solid fa-calendar-check me-2"></i>บันทึก</button>
                   </div>
                 </form>
               </div>
@@ -612,11 +683,11 @@
             <div class="card card-section p-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <h6 class="fw-bold text-danger m-0">
-                  <i class="fa-solid fa-calendar-days me-1"></i> ปฏิทินการเปิดชั้นเรียน
+                  <i aria-hidden="true" class="fa-solid fa-calendar-days me-1"></i> ปฏิทินการเปิดชั้นเรียน
                   <span id="calendarEventCount" class="text-muted fw-normal" style="font-size: 12px;"></span>
                 </h6>
                 <button class="btn btn-sm btn-outline-danger" type="button" onclick="if (calendarInstance) calendarInstance.refetchEvents();">
-                  <i class="fa-solid fa-rotate me-1"></i> รีเฟรชปฏิทิน
+                  <i aria-hidden="true" class="fa-solid fa-rotate me-1"></i> รีเฟรชปฏิทิน
                 </button>
               </div>
               <div id="calendar"></div>
@@ -626,9 +697,9 @@
       </div>
 
       <!-- TAB 3: ผลประเมินรายบุคคล -->
-      <div id="tab3" class="tab-content-item d-none">
+      <div id="tab3" class="tab-content-item d-none" role="tabpanel" aria-labelledby="tabBtn3">
         <div class="card card-section">
-          <div class="card-header card-header-custom"><i class="fa-solid fa-magnifying-glass"></i> ค้นหาผลประเมิน</div>
+          <div class="card-header card-header-custom"><i aria-hidden="true" class="fa-solid fa-magnifying-glass"></i> ค้นหาผลประเมิน</div>
           <div class="card-body p-4">
             <div class="input-group mb-3">
               <input type="text" id="teacherSearchInput" class="form-control" placeholder="พิมพ์ชื่อครู..." onkeydown="if(event.key==='Enter'){event.preventDefault(); searchTeacher();}">
@@ -641,10 +712,10 @@
       </div>
 
       <!-- TAB 4: แดชบอร์ดภาพรวม -->
-      <div id="tab4" class="tab-content-item d-none">
+      <div id="tab4" class="tab-content-item d-none" role="tabpanel" aria-labelledby="tabBtn4">
         <div class="mb-4">
           <h5 class="fw-bold text-dark mb-1">
-            <i class="fa-solid fa-chart-line text-danger me-2"></i>การประเมินนิเทศครูเป็นรายบุคคลโดยใช้กระบวนการขับเคลื่อนการจัดกิจกรรมการเรียนรู้ของครูผู้ร่วมนิเทศ (Co-Supervisor)
+            <i aria-hidden="true" class="fa-solid fa-chart-line text-danger me-2"></i>การประเมินนิเทศครูเป็นรายบุคคลโดยใช้กระบวนการขับเคลื่อนการจัดกิจกรรมการเรียนรู้ของครูผู้ร่วมนิเทศ (Co-Supervisor)
           </h5>
         </div>
 
@@ -673,7 +744,7 @@
           <div class="col-lg-6">
             <div class="card card-section h-100">
               <div class="card-header card-header-gradient">
-                <i class="fa-solid fa-list-check me-2"></i> การประเมินแต่ละด้านของโรงเรียน (ค่าเฉลี่ย และร้อยละ)
+                <i aria-hidden="true" class="fa-solid fa-list-check me-2"></i> การประเมินแต่ละด้านของโรงเรียน (ค่าเฉลี่ย และร้อยละ)
               </div>
               <div class="card-body p-3">
                 <div class="d-flex flex-column gap-3">
@@ -707,7 +778,7 @@
                   </div>
                   <div>
                     <div class="d-flex justify-content-between mb-1">
-                      <span class="fw-semibold fs-7">ด้านการวัดและประเมินผลการเรียนรู้</span>
+                      <span class="fw-semibold fs-7">ด้านการประเมินผลการจัดการเรียนรู้</span>
                       <span><span class="text-muted me-2" id="avgAspect5" style="font-size:12px;">0.00 / 25</span><span class="badge-box badge-box-maroon" id="scoreAspect5">0.00%</span></span>
                     </div>
                     <div class="progress" style="height: 10px;"><div id="barAspect5" class="progress-bar bg-danger" style="width: 0%;"></div></div>
@@ -720,34 +791,34 @@
           <div class="col-lg-6">
             <div class="card card-section h-100">
               <div class="card-header card-header-gradient">
-                <i class="fa-solid fa-chart-pie me-2"></i> สัดส่วนระดับคุณภาพประเมินนิเทศครูเป็นรายบุคคลโดยใช้กระบวนการขับเคลื่อนการจัดกิจกรรมการเรียนรู้ของครูผู้ร่วมนิเทศ (Co-Supervisor)
+                <i aria-hidden="true" class="fa-solid fa-chart-pie me-2"></i> สัดส่วนระดับคุณภาพประเมินนิเทศครูเป็นรายบุคคลโดยใช้กระบวนการขับเคลื่อนการจัดกิจกรรมการเรียนรู้ของครูผู้ร่วมนิเทศ (Co-Supervisor)
               </div>
               <div class="card-body p-3">
                 <div class="row align-items-center">
                   <div class="col-md-6 text-center mb-3 mb-md-0">
                     <div style="position: relative; width: 100%; max-width: 210px; margin: 0 auto; height: 210px;">
-                      <canvas id="qualityPieChart"></canvas>
+                      <canvas id="qualityPieChart" role="img" aria-label="กราฟวงกลมแสดงสัดส่วนระดับคุณภาพการประเมิน ดูตัวเลขสรุปในรายการด้านข้าง"></canvas>
                     </div>
                   </div>
                   <div class="col-md-6 d-flex flex-column gap-2" style="font-size: 13px;">
                     <div class="level-box-item">
-                      <span><i class="fa-solid fa-circle text-success me-1"></i> <strong>ยอดเยี่ยม</strong> (80% ขึ้นไป)</span>
+                      <span><i aria-hidden="true" class="fa-solid fa-circle text-success me-1"></i> <strong>ยอดเยี่ยม</strong> (80% ขึ้นไป)</span>
                       <span class="count-badge bg-success" id="countLevel5">0 คน</span>
                     </div>
                     <div class="level-box-item">
-                      <span><i class="fa-solid fa-circle text-primary me-1"></i> <strong>ดีมาก</strong> (70% - 79%)</span>
+                      <span><i aria-hidden="true" class="fa-solid fa-circle text-primary me-1"></i> <strong>ดีมาก</strong> (70% - 79%)</span>
                       <span class="count-badge bg-primary" id="countLevel4">0 คน</span>
                     </div>
                     <div class="level-box-item">
-                      <span><i class="fa-solid fa-circle text-info me-1"></i> <strong>ดี</strong> (60% - 69%)</span>
+                      <span><i aria-hidden="true" class="fa-solid fa-circle text-info me-1"></i> <strong>ดี</strong> (60% - 69%)</span>
                       <span class="count-badge bg-info text-dark" id="countLevel3">0 คน</span>
                     </div>
                     <div class="level-box-item">
-                      <span><i class="fa-solid fa-circle text-warning me-1"></i> <strong>พอใช้</strong> (50% - 59%)</span>
+                      <span><i aria-hidden="true" class="fa-solid fa-circle text-warning me-1"></i> <strong>พอใช้</strong> (50% - 59%)</span>
                       <span class="count-badge bg-warning text-dark" id="countLevel2">0 คน</span>
                     </div>
                     <div class="level-box-item">
-                      <span><i class="fa-solid fa-circle text-danger me-1"></i> <strong>ปรับปรุง</strong> (ต่ำกว่า 50%)</span>
+                      <span><i aria-hidden="true" class="fa-solid fa-circle text-danger me-1"></i> <strong>ปรับปรุง</strong> (ต่ำกว่า 50%)</span>
                       <span class="count-badge bg-danger" id="countLevel1">0 คน</span>
                     </div>
                   </div>
@@ -761,10 +832,10 @@
           <div class="col-lg-6">
             <div class="card card-section h-100">
               <div class="card-header card-header-gradient">
-                <i class="fa-solid fa-chart-column me-2"></i> กราฟแท่งข้อมูลแยกตามกลุ่มสาระฯ
+                <i aria-hidden="true" class="fa-solid fa-chart-column me-2"></i> กราฟแท่งข้อมูลแยกตามกลุ่มสาระฯ
               </div>
               <div class="card-body p-3" style="position: relative; height: 320px;">
-                <canvas id="deptBarChart"></canvas>
+                <canvas id="deptBarChart" role="img" aria-label="กราฟแท่งเปรียบเทียบร้อยละและค่าเฉลี่ยแยกตามกลุ่มสาระ ดูข้อมูลในตารางด้านล่าง"></canvas>
               </div>
             </div>
           </div>
@@ -772,7 +843,7 @@
           <div class="col-lg-6">
             <div class="card card-section h-100">
               <div class="card-header card-header-gradient">
-                <i class="fa-solid fa-table-list me-2"></i> ตารางสรุปผลข้อมูลแยกตามกลุ่มสาระฯ
+                <i aria-hidden="true" class="fa-solid fa-table-list me-2"></i> ตารางสรุปผลข้อมูลแยกตามกลุ่มสาระฯ
               </div>
               <div class="card-body p-0 table-responsive" style="max-height: 340px;">
                 <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
@@ -794,20 +865,20 @@
       </div>
 
       <!-- TAB 5: รายงาน -->
-      <div id="tab5" class="tab-content-item d-none">
+      <div id="tab5" class="tab-content-item d-none" role="tabpanel" aria-labelledby="tabBtn5">
         <div class="card card-section">
-          <div class="card-header card-header-custom"><i class="fa-solid fa-file-invoice"></i> รายงานผลงานนิเทศการศึกษา แยกตามกลุ่มสาระฯ</div>
+          <div class="card-header card-header-custom"><i aria-hidden="true" class="fa-solid fa-file-invoice"></i> รายงานผลงานนิเทศการศึกษา แยกตามกลุ่มสาระฯ</div>
           <!-- การ์ดออกรายงานภาพรวมโรงเรียน -->
         <div class="card mb-4 border-left-danger shadow-sm">
           <div class="card-body d-flex justify-content-between align-items-center bg-light rounded">
             <div>
               <h5 class="m-0 font-weight-bold text-dark">
-                <i class="fa-solid fa-building"></i> รายงานสรุปผลการนิเทศภาพรวมโรงเรียน
+                <i aria-hidden="true" class="fa-solid fa-building"></i> รายงานสรุปผลการนิเทศภาพรวมโรงเรียน
               </h5>
               <small class="text-muted">สรุปผลการประเมินครูทุกกลุ่มสาระการเรียนรู้ทั้งโรงเรียน</small>
             </div>
             <button class="btn btn-danger px-4" onclick="generateSchoolReport()">
-              <i class="fa-solid fa-file-pdf me-1"></i> รายงานสรุปภาพรวมโรงเรียน
+              <i aria-hidden="true" class="fa-solid fa-file-pdf me-1"></i> รายงานสรุปภาพรวมโรงเรียน
             </button>
           </div>
         </div>
@@ -977,55 +1048,55 @@
       title: "ด้านการออกแบบการเรียนรู้",
       icon: "fa-compass-drafting",
       items: [
-        "1. การจัดทำหน่วยการเรียนรู้ และแผนการจัดการเรียนรู้ สอดคล้องกับมาตรฐานการเรียนรู้ และตัวชี้วัด/ผลการเรียนรู้",
-        "2. การออกแบบกิจกรรมการเรียนรู้เน้นผู้เรียนเป็นสำคัญ ส่งเสริมการเรียนรู้เชิงรุก (Active Learning)",
-        "3. การออกแบบกิจกรรมการเรียนรู้คำนึงถึงความแตกต่างระหว่างบุคคลของผู้เรียน",
-        "4. การเลือกใช้และจัดหาแหล่งเรียนรู้ สื่อ นวัตกรรม เทคโนโลยีที่เหมาะสมกับกิจกรรม",
-        "5. การวางแผนการวัดและประเมินผลการเรียนรู้ด้วยวิธีการที่หลากหลายตามสภาพจริง"
+        "1. ครูออกแบบและจัดทำแผนการจัดการเรียนรู้ที่สอดคล้องกับมาตรฐานการเรียนรู้ ตัวชี้วัด และหลักสูตรสถานศึกษา",
+        "2. ครูออกแบบกิจกรรมการเรียนรู้ที่ส่งเสริมการเรียนรู้เชิงรุก (Active Learning) และพัฒนาสมรรถนะของผู้เรียน",
+        "3. ครูออกแบบกิจกรรมการเรียนรู้โดยคำนึงถึงความแตกต่างระหว่างบุคคลและความต้องการของผู้เรียน",
+        "4. ครูวางแผนการใช้สื่อ วัสดุ อุปกรณ์ และแหล่งเรียนรู้ที่สอดคล้องกับเนื้อหาและกิจกรรมการเรียนรู้",
+        "5. ครูออกแบบวิธีการวัดและประเมินผลการเรียนรู้ที่หลากหลายและสอดคล้องกับจุดประสงค์การเรียนรู้"
       ]
     },
     {
       title: "ด้านการจัดการเรียนรู้",
       icon: "fa-chalkboard-user",
       items: [
-        "6. จัดกิจกรรมการเรียนรู้ที่เปิดโอกาสให้ผู้เรียนได้ลงมือปฏิบัติจริง (Hands-on / Action-based)",
-        "7. ใช้คำถามกระตุ้นการคิด ท้าทาย และส่งเสริมทักษะการคิดวิเคราะห์ของผู้เรียน",
-        "8. มีการใช้เทคนิคและวิธีการสอนที่หลากหลาย เหมาะสมกับเนื้อหาและผู้เรียน",
-        "9. การบริหารจัดการเวลาในการทำกิจกรรมการเรียนรู้ได้อย่างเหมาะสมและยืดหยุ่น",
-        "10. ครูทำหน้าที่เป็นผู้อำนวยความสะดวก (Facilitator) และให้คำแนะนำแก่ผู้เรียนอย่างใกล้ชิด"
+        "6. ครูจัดการเรียนรู้ที่เน้นการลงมือปฏิบัติ (Active Learning) และเปิดโอกาสให้ผู้เรียนมีส่วนร่วมในการเรียนรู้",
+        "7. ครูดำเนินกิจกรรมการเรียนรู้อย่างเป็นลำดับ ต่อเนื่อง และเหมาะสมกับเวลา",
+        "8. ครูส่งเสริมให้ผู้เรียนฝึกคิดวิเคราะห์ คิดสังเคราะห์ คิดแก้ปัญหา และพัฒนาทักษะการคิดขั้นสูง",
+        "9. ครูจัดกิจกรรมที่ส่งเสริมให้ผู้เรียนอภิปราย แลกเปลี่ยนความคิดเห็น และสะท้อนผลการเรียนรู้",
+        "10. ครูให้คำแนะนำและอำนวยความสะดวกเพื่อส่งเสริมให้ผู้เรียนสามารถเรียนรู้ด้วยตนเอง"
       ]
     },
     {
       title: "ด้านการจัดบรรยากาศการเรียนรู้",
       icon: "fa-laptop-code",
       items: [
-        "11. สร้างบรรยากาศการเรียนรู้ที่เป็นมิตร เชิงบวก ปลอดภัย และส่งเสริมการมีส่วนร่วม",
-        "12. บริหารจัดการชั้นเรียน ควบคุมวินัย และแก้ไขปัญหาเฉพาะหน้าในชั้นเรียนได้ดี",
-        "13. มีการเลือกใช้สื่อ เทคโนโลยี และนวัตกรรมดิจิทัลที่น่าสนใจ และสอดคล้องกับเนื้อหา",
-        "14. เปิดโอกาสให้ผู้เรียนได้ใช้สื่อหรือเทคโนโลยีในการค้นคว้าและสร้างสรรค์ชิ้นงาน",
-        "15. การเชื่อมโยงเนื้อหาและสื่อการเรียนรู้กับชีวิตจริงหรือสถานการณ์ปัจจุบัน"
+        "11. ครูจัดสภาพแวดล้อมในชั้นเรียนให้เอื้อต่อการเรียนรู้ โดยคำนึงถึงความแตกต่างระหว่างผู้เรียน",
+        "12. ครูสร้างบรรยากาศการเรียนรู้ที่ปลอดภัยและเป็นมิตร เพื่อให้ผู้เรียนกล้าแสดงความคิดเห็นและมีส่วนร่วมในการเรียนรู้",
+        "13. ครูส่งเสริมให้ผู้เรียนเรียนรู้และทำงานร่วมกันผ่านกิจกรรมการเรียนรู้",
+        "14. ครูส่งเสริมให้ผู้เรียนเคารพความคิดเห็นที่แตกต่าง และปฏิบัติต่อกันด้วยความสุภาพและให้เกียรติ",
+        "15. ครูให้การเสริมแรง ชื่นชม และให้กำลังใจผู้เรียนอย่างเหมาะสม เพื่อส่งเสริมการเรียนรู้"
       ]
     },
     {
       title: "ด้านการใช้สื่อ เทคโนโลยี และแหล่งเรียนรู้",
       icon: "fa-square-check",
       items: [
-        "16. มีการแนะนำการใช้เทคโนโลยีสารสนเทศอย่างถูกต้อง ปลอดภัย และมีจริยธรรม",
-        "17. มีการวัดและประเมินผลผู้เรียนตามสภาพจริงด้วยเครื่องมือและวิธีที่หลากหลาย",
-        "18. มีการประเมินเพื่อพัฒนาการเรียนรู้ (Formative Assessment) ระหว่างการจัดกิจกรรม",
-        "19. มีการให้ข้อมูลสะท้อนกลับ (Feedback) ที่เป็นประโยชน์และทันท่วงทีแก่ผู้เรียน",
-        "20. นำผลการประเมินมาปรับปรุงและพัฒนาการจัดการเรียนรู้ในคาบเรียนอย่างต่อเนื่อง"
+        "16. ครูเลือกใช้สื่อและเทคโนโลยีได้สอดคล้องกับจุดประสงค์การเรียนรู้ เนื้อหา และผู้เรียน",
+        "17. ครูใช้สื่อและเทคโนโลยีได้อย่างถูกต้องและเหมาะสม",
+        "18. ครูประยุกต์ใช้สื่อและเทคโนโลยีให้เหมาะสมกับกิจกรรมการเรียนรู้และความแตกต่างของผู้เรียน",
+        "19. ครูส่งเสริมให้ผู้เรียนใช้สื่อและเทคโนโลยีในการแสวงหาความรู้และเรียนรู้ด้วยตนเอง",
+        "20. ครูบูรณาการสื่อและเทคโนโลยีเข้ากับกิจกรรมการเรียนรู้เพื่อส่งเสริมการเรียนรู้ของผู้เรียน"
       ]
     },
     {
-      title: "ด้านการวัดและประเมินผลการเรียนรู้",
+      title: "ด้านการประเมินผลการจัดการเรียนรู้",
       icon: "fa-user-tie",
       items: [
-        "21. ตรงต่อเวลา มีการเตรียมความพร้อมในการจัดการเรียนรู้ล่วงหน้า",
-        "22. สื่อสารกับผู้เรียนด้วยน้ำเสียง ท่าทาง และภาษาที่สุภาพ และเข้าใจง่าย",
-        "23. เปิดใจรับฟังความคิดเห็น คำติชม และข้อเสนอแนะจากผู้ร่วมนิเทศ (Co-Supervisor)",
-        "24. มีกระบวนการสะท้อนคิด (Reflection) หลังการสอนเพื่อพัฒนาตนเอง",
-        "25. มีความมุ่งมั่นในการพัฒนาการจัดการเรียนรู้เพื่อประโยชน์สูงสุดของผู้เรียน"
+        "21. ครูดำเนินการวัดและประเมินผลการเรียนรู้สอดคล้องกับจุดประสงค์การเรียนรู้และกิจกรรมการเรียนรู้",
+        "22. ครูใช้เครื่องมือวัดและประเมินผลได้อย่างเหมาะสมกับลักษณะของกิจกรรมการเรียนรู้และผู้เรียน",
+        "23. ครูใช้วิธีการวัดและประเมินผลการเรียนรู้ที่หลากหลายเพื่อรวบรวมข้อมูลการเรียนรู้ของผู้เรียน",
+        "24. ครูเปิดโอกาสให้ผู้เรียนมีส่วนร่วมในการประเมิน สะท้อนผลการเรียนรู้ และติดตามความก้าวหน้าของตนเอง",
+        "25. ครูนำผลการวัดและประเมินผลไปใช้ในการวางแผนและปรับปรุงการจัดการเรียนรู้เพื่อพัฒนาผู้เรียน"
       ]
     }
   ];
@@ -1054,8 +1125,14 @@
       targetTab.classList.remove('d-none');
     }
 
-    document.querySelectorAll('.sidebar .nav-link').forEach(btn => btn.classList.remove('active'));
-    if (btnEl) btnEl.classList.add('active');
+    document.querySelectorAll('.sidebar .nav-link').forEach(btn => {
+      btn.classList.remove('active');
+      btn.setAttribute('aria-selected', 'false');
+    });
+    if (btnEl) {
+      btnEl.classList.add('active');
+      btnEl.setAttribute('aria-selected', 'true');
+    }
 
     if (tabId === 'tab1') {
       loadFormOptions(); // รีเฟรชตัวเลือก/รายการปฏิทินให้ทันสมัย (ค่าที่กรอกไว้แล้วจะไม่หาย ดู renderPart1SelectFields)
@@ -1130,35 +1207,57 @@
     let items = [];
     let activeIndex = -1;
 
+    // ARIA combobox pattern: ก่อนหน้านี้เป็นช่องข้อความธรรมดา ผู้ใช้ Screen Reader
+    // จะไม่รู้เลยว่ามีรายการตัวเลือกให้เลือกอยู่ด้านล่าง
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-haspopup', 'listbox');
+    input.setAttribute('aria-expanded', 'false');
+    input.setAttribute('aria-controls', panelId);
+    panel.setAttribute('role', 'listbox');
+
+    function hidePanel() {
+      panel.classList.add('d-none');
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+    }
+
     function renderList() {
       const all = getOptionsFn() || [];
       const q = input.value.trim().toLowerCase();
       items = (q ? all.filter(function(v) { return String(v).toLowerCase().indexOf(q) !== -1; }) : all).slice(0, 8);
       activeIndex = -1;
+      input.removeAttribute('aria-activedescendant');
       if (items.length === 0) {
         panel.innerHTML = q ? '<div class="combo-empty">ไม่พบชื่อที่ตรงกัน — พิมพ์ต่อเพื่อระบุชื่อเองได้เลย</div>' : '';
         panel.classList.toggle('d-none', !q);
+        input.setAttribute('aria-expanded', q ? 'true' : 'false');
         return;
       }
       panel.innerHTML = items.map(function(v, i) {
-        return '<div class="combo-item" data-idx="' + i + '">' + escapeHtml(v) + '</div>';
+        return '<div class="combo-item" id="' + panelId + '_opt' + i + '" role="option" aria-selected="false" data-idx="' + i + '">' + escapeHtml(v) + '</div>';
       }).join('');
       panel.classList.remove('d-none');
+      input.setAttribute('aria-expanded', 'true');
     }
 
     function highlight(idx) {
       const nodes = panel.querySelectorAll('.combo-item');
-      nodes.forEach(function(n) { n.classList.remove('active'); });
+      nodes.forEach(function(n) { n.classList.remove('active'); n.setAttribute('aria-selected', 'false'); });
       if (idx >= 0 && nodes[idx]) {
         nodes[idx].classList.add('active');
+        nodes[idx].setAttribute('aria-selected', 'true');
         nodes[idx].scrollIntoView({ block: 'nearest' });
+        input.setAttribute('aria-activedescendant', nodes[idx].id);
+      } else {
+        input.removeAttribute('aria-activedescendant');
       }
       activeIndex = idx;
     }
 
     input.addEventListener('input', renderList);
     input.addEventListener('focus', renderList);
-    input.addEventListener('blur', function() { setTimeout(function() { panel.classList.add('d-none'); }, 150); });
+    input.addEventListener('blur', function() { setTimeout(hidePanel, 150); });
     input.addEventListener('keydown', function(e) {
       if (panel.classList.contains('d-none') || items.length === 0) return;
       if (e.key === 'ArrowDown') { e.preventDefault(); highlight(Math.min(activeIndex + 1, items.length - 1)); }
@@ -1167,10 +1266,10 @@
         if (activeIndex >= 0 && items[activeIndex] != null) {
           e.preventDefault();
           input.value = items[activeIndex];
-          panel.classList.add('d-none');
+          hidePanel();
         }
       } else if (e.key === 'Escape') {
-        panel.classList.add('d-none');
+        hidePanel();
       }
     });
     panel.addEventListener('mousedown', function(e) {
@@ -1179,7 +1278,7 @@
       e.preventDefault();
       const idx = Number(item.getAttribute('data-idx'));
       if (items[idx] != null) input.value = items[idx];
-      panel.classList.add('d-none');
+      hidePanel();
     });
   }
 
@@ -1403,12 +1502,12 @@
     let html = '';
     let qIndex = 1;
     sections.forEach(sec => {
-      html += `<div class="section-title-red"><i class="fa-solid ${sec.icon} me-1"></i> ${sec.title}</div>`;
+      html += `<div class="section-title-red"><i aria-hidden="true" class="fa-solid ${sec.icon} me-1"></i> ${sec.title}</div>`;
       sec.items.forEach(qText => {
         html += `
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center py-2 border-bottom">
-          <div class="pe-3 mb-2 mb-md-0" style="font-size: 14px;">${qText}</div>
-          <div class="rating-box">
+          <div class="pe-3 mb-2 mb-md-0" style="font-size: 14px;" id="qLabel${qIndex}">${qText}</div>
+          <div class="rating-box" role="radiogroup" aria-labelledby="qLabel${qIndex}">
             ${[5, 4, 3, 2, 1].map(score => `
               <input type="radio" id="q${qIndex}_${score}" name="q${qIndex}" value="${score}" required>
               <label for="q${qIndex}_${score}">${score}</label>
@@ -1502,14 +1601,28 @@
     calendarInstance.render();
   }
 
+  // เลื่อนจอไปยังช่อง/ข้อที่ข้อมูลไม่ครบ พร้อมไฮไลต์กรอบสีแดงชั่วครู่ ผู้ใช้จะได้เห็นทันทีว่า
+  // ต้องแก้ตรงไหน แทนที่จะต้องไล่หาเองว่าใน 25 ข้อ หรือช่องไหนใน "ตอนที่ 1" ที่ยังไม่ได้กรอก
+  function highlightAndScrollTo(el) {
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('field-highlight');
+    const focusable = el.matches('input, select, textarea') ? el : el.querySelector('input, select, textarea');
+    if (focusable) focusable.focus({ preventScroll: true });
+    setTimeout(function() { el.classList.remove('field-highlight'); }, 2500);
+  }
+
   // ===== ตอนที่ 1: บันทึกแบบประเมิน =====
   function submitEvaluationForm() {
     const form = document.getElementById('evalForm');
 
-    // ตรวจสอบว่าตอบครบทั้ง 25 ข้อหรือยัง
+    // ตรวจสอบว่าตอบครบทั้ง 25 ข้อหรือยัง — ถ้าไม่ครบ เลื่อนไปไฮไลต์ข้อแรกที่ยังไม่ได้ตอบให้ทันที
     for (let i = 1; i <= 25; i++) {
+      const firstRadio = form.querySelector(`input[name="q${i}"]`);
       if (!form.querySelector(`input[name="q${i}"]:checked`)) {
-        Swal.fire('ข้อมูลไม่ครบ', 'กรุณาตอบแบบประเมินให้ครบทั้ง 25 ข้อ', 'warning');
+        const questionRow = firstRadio ? firstRadio.closest('.d-flex') : null;
+        Swal.fire('ข้อมูลไม่ครบ', 'กรุณาตอบแบบประเมินให้ครบทั้ง 25 ข้อ (เริ่มจากข้อที่ ' + i + ')', 'warning')
+          .then(function() { highlightAndScrollTo(questionRow); });
         return;
       }
     }
@@ -1523,12 +1636,21 @@
     const period = getFieldValue('period');
     const department = document.getElementById('selDepartment').value;
 
-    if (!teacherName || !position || !department || !subject) {
-      Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือก/กรอก ชื่อผู้สอน ตำแหน่ง กลุ่มสาระ และรายวิชา ให้ครบ', 'warning');
+    const requiredPart1Fields = [
+      { value: teacherName, el: document.getElementById('fieldWrap_teacherName'), label: 'ชื่อผู้สอน' },
+      { value: position, el: document.getElementById('fieldWrap_position'), label: 'ตำแหน่ง' },
+      { value: department, el: document.getElementById('selDepartment'), label: 'กลุ่มสาระการเรียนรู้' },
+      { value: subject, el: document.getElementById('fieldWrap_subject'), label: 'รายวิชา' }
+    ];
+    const missingField = requiredPart1Fields.find(function(f) { return !f.value; });
+    if (missingField) {
+      Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือก/กรอก "' + missingField.label + '" ให้ครบ', 'warning')
+        .then(function() { highlightAndScrollTo(missingField.el); });
       return;
     }
     if (!form.evaluatorName.value) {
-      Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกชื่อครูผู้ร่วมนิเทศ', 'warning');
+      Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกชื่อครูผู้ร่วมนิเทศ', 'warning')
+        .then(function() { highlightAndScrollTo(document.getElementById('evaluatorNameInput')); });
       return;
     }
 
@@ -1693,7 +1815,7 @@
     window._visitGroupsCache = visits;
 
     let html = '<h6 class="fw-bold text-dark mb-1">รายการนิเทศของ ' + escapeHtml(teacherName) + '</h6>';
-    html += '<div class="text-muted mb-3" style="font-size:13px;"><i class="fa-solid fa-file-pdf me-1"></i> พิมพ์แบบนิเทศเปิดชั้นเรียน</div>';
+    html += '<div class="text-muted mb-3" style="font-size:13px;"><i aria-hidden="true" class="fa-solid fa-file-pdf me-1"></i> พิมพ์แบบนิเทศเปิดชั้นเรียน</div>';
     html += '<table class="table table-bordered align-middle" style="font-size: 13px;"><thead class="table-light"><tr>' +
       '<th>วันที่</th><th>รายวิชา</th><th>คาบที่</th><th class="text-center">ผู้ร่วมนิเทศประเมินแล้ว</th><th class="text-center">พิมพ์</th></tr></thead><tbody>';
     visits.forEach((v, idx) => {
@@ -1704,7 +1826,7 @@
         <td class="text-center">${v.evaluatorCount} / 5 คน</td>
         <td class="text-center">
           <button class="btn btn-sm btn-submit-red" onclick="printClassVisitPDF(${idx})">
-            <i class="fa-solid fa-file-pdf me-1"></i> ดาวน์โหลด PDF
+            <i aria-hidden="true" class="fa-solid fa-file-pdf me-1"></i> ดาวน์โหลด PDF
           </button>
         </td>
       </tr>`;
@@ -1859,7 +1981,7 @@
     depts.forEach(d => {
       html += `<tr><td class="fw-bold">${d}</td><td class="text-center">
         <button class="btn btn-sm btn-submit-red" onclick="generateDeptReport('${String(d).replace(/'/g, "\\'")}')">
-          <i class="fa-solid fa-file-pdf me-1"></i> รายงานสรุป
+          <i aria-hidden="true" class="fa-solid fa-file-pdf me-1"></i> รายงานสรุป
         </button>
       </td></tr>`;
     });
