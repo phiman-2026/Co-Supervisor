@@ -353,6 +353,94 @@
     @media (prefers-reduced-motion: reduce) {
       .field-highlight { animation: none; box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.6); }
     }
+
+    /* ===== ช่องค้นหา "เลือกรายการนิเทศจากปฏิทิน" (พิมพ์ค้นหาแทนการเลื่อนดูใน dropdown ยาวๆ) ===== */
+    .schedule-combobox { position: relative; }
+    .schedule-combobox-input-wrap { position: relative; display: flex; align-items: center; }
+    .schedule-combobox-icon {
+      position: absolute;
+      left: 14px;
+      color: #9aa0a6;
+      font-size: 14px;
+      pointer-events: none;
+    }
+    .schedule-combobox-input { padding-left: 38px; padding-right: 38px; }
+    .schedule-combobox-input:focus {
+      border-color: var(--primary-maroon);
+      box-shadow: 0 0 0 0.25rem rgba(97, 27, 34, 0.15);
+    }
+    .schedule-combobox-clear {
+      position: absolute;
+      right: 6px;
+      border: none;
+      background: transparent;
+      color: #9aa0a6;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .schedule-combobox-clear:hover { background-color: #f1f1f1; color: var(--primary-maroon); }
+    .schedule-combobox-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 1050;
+      max-height: 320px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.14);
+      padding: 6px;
+    }
+    .schedule-combobox-item {
+      padding: 9px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .schedule-combobox-item:hover,
+    .schedule-combobox-item.active {
+      background-color: rgba(97, 27, 34, 0.08);
+    }
+    .schedule-combobox-item .sch-name { font-weight: 600; color: var(--text-dark); }
+    .schedule-combobox-item .sch-meta { color: #6c757d; font-size: 12.5px; margin-top: 2px; }
+    .schedule-combobox-item mark {
+      background-color: #ffe58f;
+      color: inherit;
+      padding: 0;
+      border-radius: 2px;
+    }
+    .schedule-combobox-empty { padding: 18px 12px; text-align: center; color: #9aa0a6; font-size: 13.5px; }
+    .schedule-combobox-clearall {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 8px 12px;
+      margin-top: 2px;
+      border-top: 1px solid #eee;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #6c757d;
+      cursor: pointer;
+    }
+    .schedule-combobox-clearall:hover { background-color: #f1f1f1; color: var(--primary-maroon); }
+
+    /* ===== เครดิตท้ายหน้า ===== */
+    .app-footer-credit {
+      margin-top: 36px;
+      padding: 16px 0 6px;
+      text-align: center;
+      font-size: 12.5px;
+      color: #9aa0a6;
+      border-top: 1px solid #e6e6e6;
+    }
   </style>
 </head>
 <body>
@@ -411,10 +499,24 @@
               </div>
 
               <div class="mb-4">
-                <label class="form-label fw-bold">เลือกรายการนิเทศจากปฏิทิน</label>
-                <select id="scheduleSelect" class="form-select" onchange="applySchedule(this.value)">
-                  <option value="">-- ไม่พบในปฏิทิน / กรอกข้อมูลด้านล่างเอง --</option>
-                </select>
+                <label class="form-label fw-bold" for="scheduleSearchInput">เลือกรายการนิเทศจากปฏิทิน</label>
+                <div class="schedule-combobox">
+                  <div class="schedule-combobox-input-wrap">
+                    <i aria-hidden="true" class="fa-solid fa-magnifying-glass schedule-combobox-icon"></i>
+                    <input type="text" id="scheduleSearchInput" class="form-control schedule-combobox-input"
+                           placeholder="พิมพ์ชื่อครู / วิชา / ชั้น / ห้อง / คาบ เพื่อค้นหา..."
+                           autocomplete="off" role="combobox" aria-expanded="false"
+                           aria-controls="scheduleDropdownList" aria-autocomplete="list"
+                           onfocus="onScheduleSearchFocus()" oninput="onScheduleSearchInput(this.value)"
+                           onkeydown="onScheduleSearchKeydown(event)">
+                    <button type="button" id="scheduleClearBtn" class="schedule-combobox-clear d-none"
+                            aria-label="ล้างการเลือกรายการนิเทศ" onclick="clearScheduleSelection()">
+                      <i aria-hidden="true" class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <div id="scheduleDropdownList" class="schedule-combobox-list d-none" role="listbox"></div>
+                </div>
+                <small class="text-muted">พิมพ์เพื่อค้นหาชื่อครู/วิชา/ชั้น/ห้อง/คาบ หรือคลิกในช่องเพื่อดูรายการทั้งหมด — ถ้าไม่พบในปฏิทิน กรอกข้อมูลด้านล่างเองได้เลย</small>
               </div>
 
               <div class="row g-3">
@@ -893,6 +995,10 @@
         </div>
       </div>
 
+      <footer class="app-footer-credit">
+        ออกแบบและพัฒนาโดยฝ่ายสนับสนุนเทคโนโลยีสารสนเทศและการสื่อสาร ICT Support โรงเรียนพิมานพิทยาสรรค์ สำนักงานเขตพื้นที่การศึกษามัธยมศึกษามสงขลา สตูล
+      </footer>
+
     </div>
   </div>
 </div>
@@ -1369,23 +1475,181 @@
       });
   }
 
+  // ===== "เลือกรายการนิเทศจากปฏิทิน" แบบพิมพ์ค้นหา (searchable combobox) =====
+  // แทนที่ <select> ตัวเดิม (ต้องเลื่อนหารายการยาวๆ ทีละแถว) ด้วยช่องพิมพ์ค้นหา + รายการแบบ dropdown
+  // ที่กรองตามชื่อครู/วิชา/ชั้น/ห้อง/คาบ/วันที่แบบเรียลไทม์ทันทีที่พิมพ์ — เก็บสถานะไว้ในตัวแปรร่วมกัน:
+  //   scheduleData          รายการทั้งหมดจากเซิร์ฟเวอร์ (index ตรงกับที่ applySchedule ใช้อ้างอิง)
+  //   scheduleLastFiltered  รายการที่กรองแล้วซึ่งกำลังแสดงอยู่ตอนนี้ (สำหรับกดปุ่มลูกศร/Enter)
+  //   scheduleActiveIndex   ตำแหน่งที่ไฮไลต์ไว้ใน scheduleLastFiltered
+  //   scheduleSelectedIdx   index ของรายการที่ "เลือกแล้วจริงๆ" (เติมข้อมูลตอนที่ 1 ไปแล้ว)
+  let scheduleData = [];
+  let scheduleLastFiltered = [];
+  let scheduleActiveIndex = -1;
+  let scheduleSelectedIdx = '';
+
   function populateScheduleSelect(schedules) {
-    const sel = document.getElementById('scheduleSelect');
-    if (!sel) return;
-    let html = '<option value="">-- ไม่พบในปฏิทิน / กรอกข้อมูลด้านล่างเอง --</option>';
-    schedules.forEach(function(s, idx) {
-      const label = s.teacherName + ' | ' + s.subject + ' ม.' + s.grade + '/' + s.room +
-        ' คาบ ' + s.period + ' | ' + formatThaiDateShort(s.date);
-      html += '<option value="' + idx + '">' + escapeHtml(label) + '</option>';
-    });
-    sel.innerHTML = html;
-    sel._schedules = schedules;
+    scheduleData = schedules || [];
+    // ถ้ารายการที่เคยเลือกไว้หายไปจากชุดข้อมูลใหม่ (เช่นรีเฟรชแล้วปฏิทินถูกแก้ไข) เคลียร์สถานะ "เลือกแล้ว"
+    // ทิ้ง แต่ไม่ไปยุ่งกับข้อมูลที่ดึงมาเติมในฟอร์มไปแล้วก่อนหน้านี้
+    if (scheduleSelectedIdx !== '' && !scheduleData[Number(scheduleSelectedIdx)]) {
+      scheduleSelectedIdx = '';
+      const clearBtn = document.getElementById('scheduleClearBtn');
+      if (clearBtn) clearBtn.classList.add('d-none');
+    }
   }
 
+  function scheduleItemLabel_(s) {
+    return s.teacherName + ' | ' + s.subject + ' ม.' + s.grade + '/' + s.room +
+      ' คาบ ' + s.period + ' | ' + formatThaiDateShort(s.date);
+  }
+
+  function scheduleItemHaystack_(s) {
+    return [s.teacherName, s.subject, s.department, s.grade, s.room, s.period, s.code,
+      s.unit, s.lesson, formatThaiDateShort(s.date)].join(' ').toLowerCase();
+  }
+
+  function highlightMatch_(text, query) {
+    const safe = escapeHtml(text == null ? '' : String(text));
+    if (!query) return safe;
+    const safeQuery = escapeHtml(query);
+    const idx = safe.toLowerCase().indexOf(safeQuery.toLowerCase());
+    if (idx === -1) return safe;
+    return safe.slice(0, idx) + '<mark>' + safe.slice(idx, idx + safeQuery.length) + '</mark>' + safe.slice(idx + safeQuery.length);
+  }
+
+  function filterSchedules_(query) {
+    const q = String(query || '').trim().toLowerCase();
+    const withIdx = scheduleData.map(function(s, idx) { return { idx: idx, item: s }; });
+    if (!q) return withIdx;
+    return withIdx.filter(function(entry) { return scheduleItemHaystack_(entry.item).indexOf(q) !== -1; });
+  }
+
+  function renderScheduleDropdown_(query) {
+    const list = document.getElementById('scheduleDropdownList');
+    const input = document.getElementById('scheduleSearchInput');
+    if (!list) return;
+
+    const filtered = filterSchedules_(query);
+    scheduleLastFiltered = filtered;
+    scheduleActiveIndex = filtered.length > 0 ? 0 : -1;
+
+    let html = '';
+    if (scheduleData.length === 0) {
+      html = '<div class="schedule-combobox-empty"><i aria-hidden="true" class="fa-solid fa-calendar-xmark me-1"></i> ยังไม่มีรายการในปฏิทิน — ลงทะเบียนที่แท็บ "2. ปฏิทินการเปิดชั้นเรียน" ก่อน หรือกรอกข้อมูลด้านล่างเอง</div>';
+    } else if (filtered.length === 0) {
+      html = '<div class="schedule-combobox-empty"><i aria-hidden="true" class="fa-solid fa-magnifying-glass me-1"></i> ไม่พบรายการที่ตรงกับ "' + escapeHtml(query) + '" — กรอกข้อมูลด้านล่างเองได้เลย</div>';
+    } else {
+      filtered.forEach(function(entry, pos) {
+        const s = entry.item;
+        const nameLine = highlightMatch_(s.teacherName, query);
+        const metaLine = highlightMatch_(s.subject, query) + ' &middot; ม.' + escapeHtml(s.grade) + '/' + escapeHtml(s.room) +
+          ' &middot; คาบ ' + escapeHtml(s.period) + ' &middot; ' + escapeHtml(formatThaiDateShort(s.date));
+        html += '<div class="schedule-combobox-item' + (pos === 0 ? ' active' : '') + '" role="option" ' +
+          'data-idx="' + entry.idx + '" onmousedown="event.preventDefault(); selectScheduleItem(' + entry.idx + ');" ' +
+          'onmouseenter="scheduleActiveIndex = ' + pos + '; highlightActiveScheduleItem_();">' +
+          '<div class="sch-name">' + nameLine + '</div>' +
+          '<div class="sch-meta">' + metaLine + '</div>' +
+          '</div>';
+      });
+      if (scheduleSelectedIdx !== '') {
+        html += '<div class="schedule-combobox-clearall" onmousedown="event.preventDefault(); clearScheduleSelection();">' +
+          '<i aria-hidden="true" class="fa-solid fa-rotate-left me-1"></i> ล้างการเลือก / กรอกข้อมูลด้านล่างเอง' +
+          '</div>';
+      }
+    }
+    list.innerHTML = html;
+    list.classList.remove('d-none');
+    if (input) input.setAttribute('aria-expanded', 'true');
+  }
+
+  function highlightActiveScheduleItem_() {
+    const list = document.getElementById('scheduleDropdownList');
+    if (!list) return;
+    Array.prototype.forEach.call(list.querySelectorAll('.schedule-combobox-item'), function(el, pos) {
+      el.classList.toggle('active', pos === scheduleActiveIndex);
+    });
+  }
+
+  function closeScheduleDropdown() {
+    const list = document.getElementById('scheduleDropdownList');
+    const input = document.getElementById('scheduleSearchInput');
+    if (list) list.classList.add('d-none');
+    if (input) input.setAttribute('aria-expanded', 'false');
+    scheduleActiveIndex = -1;
+  }
+
+  function onScheduleSearchFocus() {
+    const input = document.getElementById('scheduleSearchInput');
+    renderScheduleDropdown_(input ? input.value : '');
+  }
+
+  function onScheduleSearchInput(value) {
+    // พิมพ์แก้ไขข้อความค้นหาถือว่ากำลังหาใหม่ — ยกเลิกสถานะ "เลือกแล้ว" เดิม (ยังไม่ล้างข้อมูลที่เติม
+    // ไปแล้วในฟอร์ม จนกว่าจะคลิกเลือกรายการใหม่จริงๆ)
+    if (scheduleSelectedIdx !== '') {
+      scheduleSelectedIdx = '';
+      const clearBtn = document.getElementById('scheduleClearBtn');
+      if (clearBtn) clearBtn.classList.add('d-none');
+    }
+    renderScheduleDropdown_(value);
+  }
+
+  function onScheduleSearchKeydown(event) {
+    const list = document.getElementById('scheduleDropdownList');
+    const isOpen = list && !list.classList.contains('d-none');
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (!isOpen) { renderScheduleDropdown_(event.target.value); return; }
+      if (scheduleLastFiltered.length === 0) return;
+      scheduleActiveIndex = Math.min(scheduleActiveIndex + 1, scheduleLastFiltered.length - 1);
+      highlightActiveScheduleItem_();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!isOpen || scheduleLastFiltered.length === 0) return;
+      scheduleActiveIndex = Math.max(scheduleActiveIndex - 1, 0);
+      highlightActiveScheduleItem_();
+    } else if (event.key === 'Enter') {
+      if (!isOpen) return;
+      event.preventDefault();
+      const entry = scheduleLastFiltered[scheduleActiveIndex];
+      if (entry) selectScheduleItem(entry.idx);
+    } else if (event.key === 'Escape') {
+      closeScheduleDropdown();
+      event.target.blur();
+    }
+  }
+
+  function selectScheduleItem(idx) {
+    const s = scheduleData[Number(idx)];
+    if (!s) return;
+    scheduleSelectedIdx = String(idx);
+
+    const input = document.getElementById('scheduleSearchInput');
+    if (input) input.value = scheduleItemLabel_(s);
+    const clearBtn = document.getElementById('scheduleClearBtn');
+    if (clearBtn) clearBtn.classList.remove('d-none');
+
+    closeScheduleDropdown();
+    applySchedule(idx);
+  }
+
+  function clearScheduleSelection() {
+    scheduleSelectedIdx = '';
+    const input = document.getElementById('scheduleSearchInput');
+    if (input) { input.value = ''; input.focus(); }
+    const clearBtn = document.getElementById('scheduleClearBtn');
+    if (clearBtn) clearBtn.classList.add('d-none');
+    renderScheduleDropdown_('');
+  }
+
+  // ปิด dropdown เมื่อคลิกนอกกล่องค้นหา
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest || !e.target.closest('.schedule-combobox')) closeScheduleDropdown();
+  });
+
   function applySchedule(idx) {
-    const sel = document.getElementById('scheduleSelect');
-    if (idx === '' || !sel || !sel._schedules) return;
-    const s = sel._schedules[Number(idx)];
+    if (idx === '' || idx === null || idx === undefined) return;
+    const s = scheduleData[Number(idx)];
     if (!s) return;
 
     setFieldValue('teacherName', s.teacherName);
